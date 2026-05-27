@@ -27,6 +27,8 @@ export type Mood = {
   emoji: string;
 };
 
+export type VoiceMode = "idea" | "polish" | "melody";
+
 export type GenerationRequest = {
   mode: "lyrics-from-idea" | "lyrics-from-beat";
   input: string;
@@ -37,6 +39,7 @@ export type GenerationRequest = {
   temperature: number;
   fewShotExamples?: string;
   conversationHistory?: Message[];
+  voiceMode?: VoiceMode;
 };
 
 export type Message = {

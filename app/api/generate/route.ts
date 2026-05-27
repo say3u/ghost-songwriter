@@ -1,5 +1,5 @@
 import { anthropic, SYSTEM_PROMPT } from "@/lib/claude";
-import { buildUserPrompt, buildRefinementPrompt } from "@/lib/prompts";
+import { buildUserPrompt, buildRefinementPrompt, buildPolishPrompt, buildMelodyPrompt } from "@/lib/prompts";
 import type { GenerationRequest } from "@/types";
 
 export const runtime = "nodejs";
@@ -8,11 +8,18 @@ export const maxDuration = 60;
 export async function POST(req: Request) {
   const body: GenerationRequest & { refinement?: string } = await req.json();
 
-  const { conversationHistory = [], refinement, temperature = 0.7 } = body;
+  const { conversationHistory = [], refinement, temperature = 0.7, voiceMode } = body;
 
-  const userMessage = refinement
-    ? buildRefinementPrompt(refinement)
-    : buildUserPrompt(body);
+  let userMessage: string;
+  if (refinement) {
+    userMessage = buildRefinementPrompt(refinement);
+  } else if (voiceMode === "polish") {
+    userMessage = buildPolishPrompt(body.input, body);
+  } else if (voiceMode === "melody") {
+    userMessage = buildMelodyPrompt(body.input, body);
+  } else {
+    userMessage = buildUserPrompt(body);
+  }
 
   const messages = [
     ...conversationHistory.map((m) => ({

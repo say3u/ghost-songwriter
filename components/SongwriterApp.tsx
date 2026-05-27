@@ -7,6 +7,7 @@ import StyleSelector from "./StyleSelector";
 import LyricsOutput from "./LyricsOutput";
 import RevisionHistory from "./RevisionHistory";
 import ExportButton from "./ExportButton";
+import VoiceInput from "./VoiceInput";
 import type {
   GenerationRequest,
   GeneratedSong,
@@ -14,6 +15,7 @@ import type {
   RhymeScheme,
   Language,
   Message,
+  VoiceMode,
 } from "@/types";
 
 const RHYME_SCHEMES: { value: RhymeScheme; label: string; desc: string }[] = [
@@ -44,11 +46,24 @@ export default function SongwriterApp() {
   const [refinement, setRefinement] = useState("");
   const [conversationHistory, setConversationHistory] = useState<Message[]>([]);
   const [revisions, setRevisions] = useState<Revision[]>([]);
+  const [voiceMode, setVoiceMode] = useState<VoiceMode | undefined>(undefined);
 
   const abortRef = useRef<AbortController | null>(null);
 
+  const handleVoiceResult = useCallback(
+    (text: string, vMode: VoiceMode) => {
+      setInput(text);
+      if (vMode === "idea") {
+        setVoiceMode(undefined);
+      } else {
+        setVoiceMode(vMode);
+      }
+    },
+    []
+  );
+
   const generate = useCallback(
-    async (opts: { refine?: string } = {}) => {
+    async (opts: { refine?: string; overrideVoiceMode?: VoiceMode } = {}) => {
       if (!input.trim() && !opts.refine) return;
       if (isLoading) {
         abortRef.current?.abort();
@@ -62,6 +77,8 @@ export default function SongwriterApp() {
 
       abortRef.current = new AbortController();
 
+      const activeVoiceMode = opts.overrideVoiceMode ?? voiceMode;
+
       const req: GenerationRequest & { refinement?: string } = {
         mode,
         input,
@@ -72,6 +89,7 @@ export default function SongwriterApp() {
         temperature,
         fewShotExamples,
         conversationHistory,
+        voiceMode: activeVoiceMode,
         ...(opts.refine ? { refinement: opts.refine } : {}),
       };
 
@@ -214,14 +232,17 @@ export default function SongwriterApp() {
 
           {/* Main input */}
           <div>
-            <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-widest mb-2">
-              {mode === "lyrics-from-idea"
-                ? "Your idea, concept, or lyric snippet"
-                : "Describe the beat or musical vibe"}
-            </label>
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-xs font-semibold text-zinc-400 uppercase tracking-widest">
+                {mode === "lyrics-from-idea"
+                  ? "Your idea, concept, or lyric snippet"
+                  : "Describe the beat or musical vibe"}
+              </label>
+              <VoiceInput onResult={handleVoiceResult} disabled={isLoading} />
+            </div>
             <textarea
               value={input}
-              onChange={(e) => setInput(e.target.value)}
+              onChange={(e) => { setInput(e.target.value); setVoiceMode(undefined); }}
               placeholder={
                 mode === "lyrics-from-idea"
                   ? "e.g. feeling lost after moving to a new city, late nights, neon lights..."
@@ -230,6 +251,16 @@ export default function SongwriterApp() {
               rows={4}
               className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-3 text-sm text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-violet-600 resize-none"
             />
+            {voiceMode && input && (
+              <div className="mt-2 flex items-center gap-2">
+                <span className="text-xs text-violet-400 bg-violet-950/60 border border-violet-800 rounded-full px-2.5 py-1">
+                  {voiceMode === "polish" ? "🎤 Will polish your sung lyrics" : "🎵 Will write lyrics for your melody"}
+                </span>
+                <button onClick={() => setVoiceMode(undefined)} className="text-xs text-zinc-600 hover:text-zinc-400">
+                  clear
+                </button>
+              </div>
+            )}
           </div>
 
           <StyleSelector selected={artistStyles} onChange={setArtistStyles} />

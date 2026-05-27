@@ -53,3 +53,58 @@ export function buildRefinementPrompt(instruction: string): string {
 
 Keep the same JSON structure. Only change what is needed to fulfill the refinement request. Output ONLY valid JSON.`;
 }
+
+export function buildPolishPrompt(
+  rawTranscription: string,
+  req: GenerationRequest
+): string {
+  const styleClause =
+    req.artistStyles.length > 0
+      ? `Write in the combined style of: ${req.artistStyles.join(", ")}.`
+      : "";
+  const moodClause =
+    req.moods.length > 0
+      ? `Emotional tone/mood: ${req.moods.join(", ")}.`
+      : "";
+
+  return `The following text is a raw, rough transcription of someone singing into a microphone. It may be imperfect, fragmented, or unpolished — that's intentional. Your job is to take the core emotion, phrases, and ideas and transform them into a fully structured, polished song.
+
+Raw sung vocals:
+"""
+${rawTranscription}
+"""
+
+${styleClause}
+${moodClause}
+Rhyme scheme: ${req.rhymeScheme}
+Language: ${req.language}
+
+Preserve the singer's original voice and intent as much as possible. Clean up grammar only where needed. Output ONLY valid JSON in the standard song structure.`;
+}
+
+export function buildMelodyPrompt(
+  melodyDescription: string,
+  req: GenerationRequest
+): string {
+  const styleClause =
+    req.artistStyles.length > 0
+      ? `Write in the combined style of: ${req.artistStyles.join(", ")}.`
+      : "";
+  const moodClause =
+    req.moods.length > 0
+      ? `Emotional tone/mood: ${req.moods.join(", ")}.`
+      : "";
+
+  return `The user hummed or sang a wordless melody into their microphone. Here is an audio analysis of what was captured:
+
+${melodyDescription}
+
+Your task is to write original lyrics that would fit this melody's energy, tempo, and emotional character. Do not try to match specific pitches — focus on matching the feel and flow.
+
+${styleClause}
+${moodClause}
+Rhyme scheme: ${req.rhymeScheme}
+Language: ${req.language}
+
+Output ONLY valid JSON in the standard song structure.`;
+}
