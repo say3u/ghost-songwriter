@@ -1,13 +1,17 @@
 "use client";
 
 import { useState, useCallback, useRef } from "react";
-import { Mic2, Music2, Wand2, RefreshCw, ChevronDown, ChevronUp } from "lucide-react";
+import { Mic2, Music2, Wand2, RefreshCw, ChevronDown, ChevronUp, Save, LogOut, User, Loader2 } from "lucide-react";
 import MoodBoard from "./MoodBoard";
 import StyleSelector from "./StyleSelector";
 import LyricsOutput from "./LyricsOutput";
 import RevisionHistory from "./RevisionHistory";
 import ExportButton from "./ExportButton";
 import VoiceInput from "./VoiceInput";
+import AuthModal from "./AuthModal";
+import SongLibrary from "./SongLibrary";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/lib/supabase";
 import type {
   GenerationRequest,
   GeneratedSong,
@@ -28,6 +32,8 @@ const RHYME_SCHEMES: { value: RhymeScheme; label: string; desc: string }[] = [
 const LANGUAGES: Language[] = ["English", "Spanish", "French", "Portuguese", "German"];
 
 export default function SongwriterApp() {
+  const auth = useAuth();
+
   const [mode, setMode] = useState<"lyrics-from-idea" | "lyrics-from-beat">("lyrics-from-idea");
   const [input, setInput] = useState("");
   const [artistStyles, setArtistStyles] = useState<string[]>([]);
@@ -48,47 +54,35 @@ export default function SongwriterApp() {
   const [revisions, setRevisions] = useState<Revision[]>([]);
   const [voiceMode, setVoiceMode] = useState<VoiceMode | undefined>(undefined);
 
+  const [showAuth, setShowAuth] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+  const [libRefresh, setLibRefresh] = useState(0);
+
   const abortRef = useRef<AbortController | null>(null);
 
-  const handleVoiceResult = useCallback(
-    (text: string, vMode: VoiceMode) => {
-      setInput(text);
-      if (vMode === "idea") {
-        setVoiceMode(undefined);
-      } else {
-        setVoiceMode(vMode);
-      }
-    },
-    []
-  );
+  const handleVoiceResult = useCallback((text: string, vMode: VoiceMode) => {
+    setInput(text);
+    setVoiceMode(vMode === "idea" ? undefined : vMode);
+  }, []);
 
   const generate = useCallback(
     async (opts: { refine?: string; overrideVoiceMode?: VoiceMode } = {}) => {
       if (!input.trim() && !opts.refine) return;
-      if (isLoading) {
-        abortRef.current?.abort();
-        return;
-      }
+      if (isLoading) { abortRef.current?.abort(); return; }
 
       setIsLoading(true);
       setError("");
       setStreaming("");
       setSong(null);
-
+      setSaveSuccess(false);
       abortRef.current = new AbortController();
 
       const activeVoiceMode = opts.overrideVoiceMode ?? voiceMode;
 
       const req: GenerationRequest & { refinement?: string } = {
-        mode,
-        input,
-        artistStyles,
-        moods,
-        rhymeScheme,
-        language,
-        temperature,
-        fewShotExamples,
-        conversationHistory,
+        mode, input, artistStyles, moods, rhymeScheme, language,
+        temperature, fewShotExamples, conversationHistory,
         voiceMode: activeVoiceMode,
         ...(opts.refine ? { refinement: opts.refine } : {}),
       };
@@ -114,31 +108,21 @@ export default function SongwriterApp() {
           setStreaming(accumulated);
         }
 
-        // Parse the completed JSON
         const jsonMatch = accumulated.match(/\{[\s\S]*\}/);
         if (!jsonMatch) throw new Error("Invalid response format");
         const parsed: GeneratedSong = JSON.parse(jsonMatch[0]);
         setSong(parsed);
 
-        // Build new conversation history for iterative refinement
-        const userMsg = opts.refine
-          ? `Refine: ${opts.refine}`
-          : req.input;
-        const newHistory: Message[] = [
-          ...conversationHistory,
+        const userMsg = opts.refine ? `Refine: ${opts.refine}` : req.input;
+        setConversationHistory((prev) => [
+          ...prev,
           { role: "user", content: userMsg },
           { role: "assistant", content: accumulated },
-        ];
-        setConversationHistory(newHistory);
+        ]);
 
-        // Save to revision history
-        const revision: Revision = {
-          id: Date.now().toString(),
-          timestamp: new Date(),
-          request: req,
-          result: parsed,
-        };
-        setRevisions((prev) => [revision, ...prev].slice(0, 20));
+        setRevisions((prev) =>
+          [{ id: Date.now().toString(), timestamp: new Date(), request: req, result: parsed }, ...prev].slice(0, 20)
+        );
         setRefinement("");
       } catch (err) {
         if ((err as Error).name !== "AbortError") {
@@ -149,11 +133,35 @@ export default function SongwriterApp() {
         setStreaming("");
       }
     },
-    [
-      input, mode, artistStyles, moods, rhymeScheme, language,
-      temperature, fewShotExamples, conversationHistory, isLoading,
-    ]
+    [input, mode, artistStyles, moods, rhymeScheme, language, temperature, fewShotExamples, conversationHistory, isLoading, voiceMode]
   );
+
+  const saveSong = async () => {
+    if (!song || !auth.user) return;
+    setSaving(true);
+    const { error: dbErr } = await supabase.from("songs").insert({
+      user_id: auth.user.id,
+      input,
+      generation_mode: mode,
+      artist_styles: artistStyles,
+      moods,
+      result: song as unknown as Record<string, unknown>,
+      title: song.sections[0]?.content?.split("\n")[0]?.slice(0, 60) ?? null,
+    });
+    setSaving(false);
+    if (!dbErr) {
+      setSaveSuccess(true);
+      setLibRefresh((n) => n + 1);
+      setTimeout(() => setSaveSuccess(false), 3000);
+    }
+  };
+
+  const loadFromLibrary = (loadedSong: GeneratedSong, loadedInput: string) => {
+    setSong(loadedSong);
+    setInput(loadedInput);
+    setConversationHistory([]);
+    setSaveSuccess(false);
+  };
 
   const restoreRevision = (rev: Revision) => {
     setInput(rev.request.input);
@@ -173,10 +181,13 @@ export default function SongwriterApp() {
     setStreaming("");
     setError("");
     setRefinement("");
+    setSaveSuccess(false);
   };
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100">
+      {showAuth && <AuthModal onClose={() => setShowAuth(false)} auth={auth} />}
+
       {/* Header */}
       <header className="border-b border-zinc-800 px-6 py-4">
         <div className="max-w-5xl mx-auto flex items-center justify-between">
@@ -189,25 +200,41 @@ export default function SongwriterApp() {
               <p className="text-xs text-zinc-500">AI-powered songwriting assistant</p>
             </div>
           </div>
-          {song && (
-            <div className="flex items-center gap-2">
-              <ExportButton song={song} filename="lyrics" />
-              <button
-                onClick={reset}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm text-zinc-400 hover:text-zinc-200 transition-colors"
-              >
+
+          <div className="flex items-center gap-2">
+            {song && <ExportButton song={song} filename="lyrics" />}
+            {song && (
+              <button onClick={reset} className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-zinc-400 hover:text-zinc-200 transition-colors">
                 <RefreshCw size={14} />
-                New Song
+                New
               </button>
-            </div>
-          )}
+            )}
+
+            {auth.loading ? null : auth.user ? (
+              <div className="flex items-center gap-2 ml-2 pl-2 border-l border-zinc-800">
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-zinc-800 text-sm text-zinc-300">
+                  <User size={13} className="text-violet-400" />
+                  <span className="max-w-[120px] truncate text-xs">{auth.user.email}</span>
+                </div>
+                <button onClick={auth.signOut} title="Sign out" className="p-2 rounded-lg text-zinc-500 hover:text-zinc-300 transition-colors">
+                  <LogOut size={14} />
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setShowAuth(true)}
+                className="ml-2 px-4 py-2 rounded-lg bg-violet-700 hover:bg-violet-600 text-sm font-medium transition-colors"
+              >
+                Sign In
+              </button>
+            )}
+          </div>
         </div>
       </header>
 
       <main className="max-w-5xl mx-auto px-6 py-8 grid grid-cols-1 lg:grid-cols-[1fr_1.2fr] gap-8">
-        {/* Left panel — inputs */}
+        {/* Left panel */}
         <div className="space-y-5">
-          {/* Mode toggle */}
           <div className="flex rounded-xl overflow-hidden border border-zinc-700 bg-zinc-900">
             {(
               [
@@ -219,24 +246,18 @@ export default function SongwriterApp() {
                 key={m.value}
                 onClick={() => setMode(m.value)}
                 className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium transition-colors ${
-                  mode === m.value
-                    ? "bg-violet-700 text-white"
-                    : "text-zinc-400 hover:text-zinc-200"
+                  mode === m.value ? "bg-violet-700 text-white" : "text-zinc-400 hover:text-zinc-200"
                 }`}
               >
-                {m.icon}
-                {m.label}
+                {m.icon}{m.label}
               </button>
             ))}
           </div>
 
-          {/* Main input */}
           <div>
             <div className="flex items-center justify-between mb-2">
               <label className="text-xs font-semibold text-zinc-400 uppercase tracking-widest">
-                {mode === "lyrics-from-idea"
-                  ? "Your idea, concept, or lyric snippet"
-                  : "Describe the beat or musical vibe"}
+                {mode === "lyrics-from-idea" ? "Your idea, concept, or lyric snippet" : "Describe the beat or musical vibe"}
               </label>
               <VoiceInput onResult={handleVoiceResult} disabled={isLoading} />
             </div>
@@ -256,9 +277,7 @@ export default function SongwriterApp() {
                 <span className="text-xs text-violet-400 bg-violet-950/60 border border-violet-800 rounded-full px-2.5 py-1">
                   {voiceMode === "polish" ? "🎤 Will polish your sung lyrics" : "🎵 Will write lyrics for your melody"}
                 </span>
-                <button onClick={() => setVoiceMode(undefined)} className="text-xs text-zinc-600 hover:text-zinc-400">
-                  clear
-                </button>
+                <button onClick={() => setVoiceMode(undefined)} className="text-xs text-zinc-600 hover:text-zinc-400">clear</button>
               </div>
             )}
           </div>
@@ -266,20 +285,15 @@ export default function SongwriterApp() {
           <StyleSelector selected={artistStyles} onChange={setArtistStyles} />
           <MoodBoard selected={moods} onChange={setMoods} />
 
-          {/* Rhyme scheme */}
           <div>
-            <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-widest mb-2">
-              Rhyme Scheme
-            </label>
+            <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-widest mb-2">Rhyme Scheme</label>
             <div className="grid grid-cols-4 gap-2">
               {RHYME_SCHEMES.map((s) => (
                 <button
                   key={s.value}
                   onClick={() => setRhymeScheme(s.value)}
                   className={`py-2 rounded-lg text-sm font-medium border transition-colors ${
-                    rhymeScheme === s.value
-                      ? "bg-violet-700 border-violet-600 text-white"
-                      : "bg-zinc-900 border-zinc-700 text-zinc-400 hover:border-zinc-500"
+                    rhymeScheme === s.value ? "bg-violet-700 border-violet-600 text-white" : "bg-zinc-900 border-zinc-700 text-zinc-400 hover:border-zinc-500"
                   }`}
                 >
                   <span className="block font-mono">{s.label}</span>
@@ -289,7 +303,6 @@ export default function SongwriterApp() {
             </div>
           </div>
 
-          {/* Advanced toggle */}
           <button
             onClick={() => setShowAdvanced((v) => !v)}
             className="flex items-center gap-1.5 text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
@@ -300,20 +313,15 @@ export default function SongwriterApp() {
 
           {showAdvanced && (
             <div className="space-y-4 pt-1">
-              {/* Language */}
               <div>
-                <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-widest mb-2">
-                  Language
-                </label>
+                <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-widest mb-2">Language</label>
                 <div className="flex flex-wrap gap-2">
                   {LANGUAGES.map((l) => (
                     <button
                       key={l}
                       onClick={() => setLanguage(l)}
                       className={`px-3 py-1.5 rounded-full text-sm border transition-colors ${
-                        language === l
-                          ? "bg-violet-700 border-violet-600 text-white"
-                          : "bg-zinc-900 border-zinc-700 text-zinc-400 hover:border-zinc-500"
+                        language === l ? "bg-violet-700 border-violet-600 text-white" : "bg-zinc-900 border-zinc-700 text-zinc-400 hover:border-zinc-500"
                       }`}
                     >
                       {l}
@@ -322,39 +330,23 @@ export default function SongwriterApp() {
                 </div>
               </div>
 
-              {/* Creativity slider */}
               <div>
                 <div className="flex justify-between items-center mb-2">
-                  <label className="text-xs font-semibold text-zinc-400 uppercase tracking-widest">
-                    Creativity
-                  </label>
+                  <label className="text-xs font-semibold text-zinc-400 uppercase tracking-widest">Creativity</label>
                   <span className="text-xs text-zinc-500">
-                    {temperature <= 0.3
-                      ? "Conservative"
-                      : temperature <= 0.6
-                      ? "Balanced"
-                      : temperature <= 0.8
-                      ? "Creative"
-                      : "Wild"}
+                    {temperature <= 0.3 ? "Conservative" : temperature <= 0.6 ? "Balanced" : temperature <= 0.8 ? "Creative" : "Wild"}
                     {" "}({temperature.toFixed(1)})
                   </span>
                 </div>
-                <input
-                  type="range"
-                  min={0.1}
-                  max={1.0}
-                  step={0.1}
-                  value={temperature}
+                <input type="range" min={0.1} max={1.0} step={0.1} value={temperature}
                   onChange={(e) => setTemperature(parseFloat(e.target.value))}
                   className="w-full accent-violet-500"
                 />
                 <div className="flex justify-between text-[10px] text-zinc-600 mt-1">
-                  <span>Safe</span>
-                  <span>Experimental</span>
+                  <span>Safe</span><span>Experimental</span>
                 </div>
               </div>
 
-              {/* Few-shot examples */}
               <div>
                 <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-widest mb-2">
                   Your Voice (paste 2–3 of your own lines)
@@ -370,49 +362,64 @@ export default function SongwriterApp() {
             </div>
           )}
 
-          {/* Generate button */}
           <button
             onClick={() => generate()}
             disabled={!input.trim()}
             className="w-full py-3.5 rounded-xl font-semibold text-sm transition-all bg-violet-600 hover:bg-violet-500 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {isLoading ? (
-              <>
-                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                Generating... (click to cancel)
-              </>
+              <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Generating... (click to cancel)</>
             ) : (
-              <>
-                <Wand2 size={16} />
-                Generate Lyrics
-              </>
+              <><Wand2 size={16} />Generate Lyrics</>
             )}
           </button>
 
           {error && (
-            <p className="text-sm text-red-400 bg-red-950/40 border border-red-900 rounded-lg px-4 py-2">
-              {error}
-            </p>
+            <p className="text-sm text-red-400 bg-red-950/40 border border-red-900 rounded-lg px-4 py-2">{error}</p>
           )}
         </div>
 
-        {/* Right panel — output */}
+        {/* Right panel */}
         <div className="space-y-4">
           <LyricsOutput streaming={streaming} song={song} isLoading={isLoading} />
+
+          {/* Save button */}
+          {song && !isLoading && (
+            <div className="flex items-center gap-2">
+              {auth.user ? (
+                <button
+                  onClick={saveSong}
+                  disabled={saving || saveSuccess}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border transition-all ${
+                    saveSuccess
+                      ? "bg-emerald-900/40 border-emerald-700 text-emerald-400"
+                      : "bg-zinc-800 border-zinc-700 text-zinc-300 hover:bg-zinc-700 hover:text-white"
+                  }`}
+                >
+                  {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+                  {saveSuccess ? "Saved!" : saving ? "Saving..." : "Save Song"}
+                </button>
+              ) : (
+                <button
+                  onClick={() => setShowAuth(true)}
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm border border-zinc-700 bg-zinc-800 text-zinc-400 hover:text-zinc-200 transition-colors"
+                >
+                  <Save size={14} />
+                  Sign in to save
+                </button>
+              )}
+            </div>
+          )}
 
           {/* Iterative refinement */}
           {song && !isLoading && (
             <div className="rounded-xl border border-zinc-700 bg-zinc-900/60 p-4 space-y-3">
-              <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-widest">
-                Refine This Draft
-              </label>
+              <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-widest">Refine This Draft</label>
               <div className="flex gap-2">
                 <input
                   value={refinement}
                   onChange={(e) => setRefinement(e.target.value)}
-                  onKeyDown={(e) =>
-                    e.key === "Enter" && refinement.trim() && generate({ refine: refinement })
-                  }
+                  onKeyDown={(e) => e.key === "Enter" && refinement.trim() && generate({ refine: refinement })}
                   placeholder='e.g. "make the chorus darker", "shorter bridge", "more aggressive"'
                   className="flex-1 bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-violet-600"
                 />
@@ -433,6 +440,10 @@ export default function SongwriterApp() {
           )}
 
           <RevisionHistory history={revisions} onRestore={restoreRevision} />
+
+          {auth.user && (
+            <SongLibrary userId={auth.user.id} onLoad={loadFromLibrary} refreshTrigger={libRefresh} />
+          )}
         </div>
       </main>
     </div>
