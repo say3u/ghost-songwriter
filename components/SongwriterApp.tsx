@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef } from "react";
-import { Mic2, Wand2, Music2, RefreshCw, Save, LogOut, ChevronDown, ChevronUp, Loader2 } from "lucide-react";
+import { Wand2, Music2, RefreshCw, Save, LogOut, ChevronDown, ChevronUp, Loader2 } from "lucide-react";
 import MoodBoard from "./MoodBoard";
 import StyleSelector from "./StyleSelector";
 import LyricsOutput from "./LyricsOutput";
@@ -133,11 +133,8 @@ export default function SongwriterApp() {
 
       {/* ── Header ── */}
       <header className="px-6 py-5 flex items-center justify-between max-w-2xl mx-auto">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shadow-lg shadow-purple-500/30">
-            <Mic2 size={15} className="text-white" />
-          </div>
-          <span className="text-sm font-black tracking-[0.15em] uppercase text-white">Drifty Studio</span>
+        <div className="flex items-center">
+          <img src="/logo.png" alt="Drifty Studio" className="h-8 w-auto" style={{ filter: "brightness(0) invert(1)" }} />
         </div>
 
         <div className="flex items-center gap-2">
