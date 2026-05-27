@@ -241,33 +241,33 @@ export default function VoiceInput({ onResult, disabled }: Props) {
           onClick={() => setState("selecting")}
           disabled={disabled}
           title="Record voice input"
-          className="p-2 rounded-lg bg-zinc-800 border border-zinc-700 text-zinc-400 hover:text-violet-400 hover:border-violet-700 transition-all disabled:opacity-40"
+          className="p-2 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-500 hover:text-green-400 hover:border-green-500/40 transition-all disabled:opacity-40"
         >
-          <Mic size={16} />
+          <Mic size={15} />
         </button>
       )}
 
       {state === "selecting" && (
-        <div className="absolute bottom-full mb-2 right-0 z-20 w-64 rounded-xl border border-zinc-700 bg-zinc-900 shadow-2xl shadow-black/60 overflow-hidden">
-          <div className="px-3 py-2 border-b border-zinc-800">
-            <p className="text-xs text-zinc-400 font-semibold uppercase tracking-widest">Choose input mode</p>
+        <div className="absolute bottom-full mb-2 right-0 z-20 w-64 rounded-2xl border border-zinc-800 bg-zinc-950 shadow-2xl shadow-black overflow-hidden">
+          <div className="px-4 py-3 border-b border-zinc-800">
+            <p className="text-[11px] font-bold text-zinc-500 uppercase tracking-widest">Record your input</p>
           </div>
           {MODES.map((m) => (
             <button
               key={m.value}
               onClick={() => handleModeSelect(m.value)}
-              className="w-full flex items-start gap-3 px-4 py-3 hover:bg-zinc-800 transition-colors text-left"
+              className="w-full flex items-start gap-3 px-4 py-3.5 hover:bg-zinc-900 transition-colors text-left"
             >
-              <span className="text-lg leading-none mt-0.5">{m.emoji}</span>
+              <span className="text-base leading-none mt-0.5">{m.emoji}</span>
               <div>
-                <p className="text-sm font-medium text-zinc-200">{m.label}</p>
-                <p className="text-xs text-zinc-500 mt-0.5">{m.desc}</p>
+                <p className="text-sm font-semibold text-zinc-200">{m.label}</p>
+                <p className="text-xs text-zinc-600 mt-0.5">{m.desc}</p>
               </div>
             </button>
           ))}
           <button
             onClick={() => setState("idle")}
-            className="w-full px-4 py-2 text-xs text-zinc-600 hover:text-zinc-400 border-t border-zinc-800 transition-colors"
+            className="w-full px-4 py-2.5 text-xs text-zinc-600 hover:text-zinc-400 border-t border-zinc-800 transition-colors"
           >
             Cancel
           </button>
@@ -278,29 +278,27 @@ export default function VoiceInput({ onResult, disabled }: Props) {
         <div className="flex items-center gap-2">
           <button
             onClick={handleStop}
-            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-red-900/60 border border-red-800 text-red-300 hover:bg-red-900 transition-colors text-sm font-medium"
+            className="flex items-center gap-2 px-3 py-2 rounded-xl bg-red-950/60 border border-red-900/60 text-red-400 hover:bg-red-950 transition-colors text-xs font-semibold"
           >
-            <span className="w-2 h-2 rounded-full bg-red-400 animate-pulse" />
-            {selectedMode === "idea" ? "Listening..." : "Recording..."}
-            <Square size={12} />
+            <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse" />
+            {selectedMode === "idea" ? "Listening" : "Recording"}
+            <Square size={11} />
           </button>
           {transcript && (
-            <span className="text-xs text-zinc-500 truncate max-w-[150px]">
-              "{transcript}"
-            </span>
+            <span className="text-xs text-zinc-600 truncate max-w-[140px]">"{transcript}"</span>
           )}
         </div>
       )}
 
       {state === "processing" && (
-        <div className="flex items-center gap-2 text-sm text-zinc-400">
-          <Loader2 size={14} className="animate-spin" />
+        <div className="flex items-center gap-1.5 text-xs text-zinc-500">
+          <Loader2 size={12} className="animate-spin" />
           Analyzing...
         </div>
       )}
 
       {error && (
-        <p className="absolute top-full mt-1 right-0 text-xs text-red-400 whitespace-nowrap z-10 bg-zinc-950 px-2 py-1 rounded border border-red-900">
+        <p className="absolute top-full mt-1 right-0 text-xs text-red-400 whitespace-nowrap z-10 bg-zinc-950 px-2 py-1 rounded-lg border border-red-900/50">
           {error}
         </p>
       )}
