@@ -3,16 +3,14 @@
 import type { Mood } from "@/types";
 
 const MOODS: Mood[] = [
-  { id: "melancholic", label: "Melancholic", emoji: "🌧️" },
-  { id: "angry",       label: "Angry",       emoji: "🔥" },
-  { id: "euphoric",    label: "Euphoric",    emoji: "⚡" },
-  { id: "nostalgic",   label: "Nostalgic",   emoji: "🌅" },
-  { id: "romantic",    label: "Romantic",    emoji: "🌹" },
-  { id: "introspective", label: "Introspective", emoji: "🌙" },
-  { id: "hype",        label: "Hype",        emoji: "💥" },
-  { id: "chill",       label: "Chill",       emoji: "🌊" },
-  { id: "dark",        label: "Dark",        emoji: "🖤" },
-  { id: "hopeful",     label: "Hopeful",     emoji: "✨" },
+  { id: "melancholic",   label: "Sad",       emoji: "🌧️" },
+  { id: "angry",         label: "Angry",     emoji: "🔥" },
+  { id: "euphoric",      label: "Happy",     emoji: "⚡" },
+  { id: "romantic",      label: "Love",      emoji: "🌹" },
+  { id: "hype",          label: "Hype",      emoji: "💥" },
+  { id: "chill",         label: "Chill",     emoji: "🌊" },
+  { id: "dark",          label: "Dark",      emoji: "🖤" },
+  { id: "nostalgic",     label: "Nostalgic", emoji: "🌅" },
 ];
 
 type Props = { selected: string[]; onChange: (moods: string[]) => void };
@@ -23,9 +21,7 @@ export default function MoodBoard({ selected, onChange }: Props) {
 
   return (
     <div>
-      <label className="block text-[11px] font-bold text-zinc-500 uppercase tracking-widest mb-3">
-        Mood / Vibe
-      </label>
+      <p className="text-xs text-white/40 mb-3 font-medium">Pick a vibe</p>
       <div className="flex flex-wrap gap-2">
         {MOODS.map((mood) => {
           const active = selected.includes(mood.id);
@@ -33,13 +29,14 @@ export default function MoodBoard({ selected, onChange }: Props) {
             <button
               key={mood.id}
               onClick={() => toggle(mood.id)}
-              className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all border ${
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold transition-all ${
                 active
-                  ? "bg-green-500 border-green-500 text-black"
-                  : "bg-zinc-900 border-zinc-800 text-zinc-400 hover:border-zinc-600 hover:text-zinc-200"
+                  ? "bg-white text-black shadow-lg scale-105"
+                  : "bg-white/10 text-white/70 hover:bg-white/20 hover:text-white"
               }`}
             >
-              {mood.emoji} {mood.label}
+              <span>{mood.emoji}</span>
+              <span>{mood.label}</span>
             </button>
           );
         })}
