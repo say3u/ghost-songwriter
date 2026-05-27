@@ -196,7 +196,7 @@ export default function SongwriterApp() {
               <Mic2 size={16} />
             </div>
             <div>
-              <h1 className="text-lg font-bold tracking-tight">GhostWriter AI</h1>
+              <h1 className="text-lg font-bold tracking-tight">DRIFTY STUDIO</h1>
               <p className="text-xs text-zinc-500">AI-powered songwriting assistant</p>
             </div>
           </div>
