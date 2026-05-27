@@ -7,18 +7,11 @@ type Props = { streaming: string; song: GeneratedSong | null; isLoading: boolean
 
 function SectionCard({ section }: { section: SongSection }) {
   return (
-    <div className="mb-6">
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-[10px] font-black uppercase tracking-widest text-green-500">
-          {section.label}
-        </span>
-        {section.syllables && (
-          <span className="text-[10px] text-zinc-700 font-mono">
-            [{section.syllables.join(", ")}]
-          </span>
-        )}
-      </div>
-      <p className="text-zinc-100 leading-8 whitespace-pre-line text-sm">
+    <div className="mb-7">
+      <span className="inline-block text-[10px] font-black uppercase tracking-widest text-purple-400 bg-purple-400/10 px-2.5 py-1 rounded-full mb-3">
+        {section.label}
+      </span>
+      <p className="text-gray-800 leading-8 whitespace-pre-line text-[15px]">
         {section.content}
       </p>
     </div>
@@ -26,36 +19,34 @@ function SectionCard({ section }: { section: SongSection }) {
 }
 
 export default function LyricsOutput({ streaming, song, isLoading }: Props) {
-  const streamRef = useRef<HTMLDivElement>(null);
+  const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (streamRef.current) streamRef.current.scrollTop = streamRef.current.scrollHeight;
+    if (ref.current) ref.current.scrollTop = ref.current.scrollHeight;
   }, [streaming]);
 
   if (!isLoading && !streaming && !song) return null;
 
   return (
-    <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 overflow-hidden">
-      <div className="px-5 py-3.5 border-b border-zinc-800/60 flex items-center gap-3">
+    <div className="fade-up rounded-3xl bg-white shadow-2xl shadow-black/40 overflow-hidden">
+      {/* Card header */}
+      <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-3">
         {isLoading ? (
-          <div className="flex items-end gap-0.5 h-4">
-            <span className="wave-bar" />
-            <span className="wave-bar" />
-            <span className="wave-bar" />
-            <span className="wave-bar" />
-            <span className="wave-bar" />
+          <div className="flex items-end gap-1 h-5">
+            <span className="wave-bar" /><span className="wave-bar" /><span className="wave-bar" />
+            <span className="wave-bar" /><span className="wave-bar" />
           </div>
         ) : (
-          <div className="w-2 h-2 rounded-full bg-green-500" />
+          <div className="w-2.5 h-2.5 rounded-full bg-gradient-to-br from-purple-500 to-pink-500" />
         )}
-        <span className="text-xs font-bold text-zinc-400 uppercase tracking-widest">
-          {isLoading ? "Writing your song..." : "Generated Lyrics"}
+        <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">
+          {isLoading ? "Writing your song..." : "Your Lyrics"}
         </span>
       </div>
 
-      <div ref={streamRef} className="p-6 max-h-[600px] overflow-y-auto">
+      <div ref={ref} className="px-6 py-6 max-h-[540px] overflow-y-auto">
         {isLoading && !song ? (
-          <pre className="text-zinc-600 text-xs font-mono whitespace-pre-wrap leading-relaxed">
+          <pre className="text-gray-300 text-xs font-mono whitespace-pre-wrap leading-relaxed">
             {streaming || "Thinking..."}
           </pre>
         ) : song ? (
@@ -63,18 +54,17 @@ export default function LyricsOutput({ streaming, song, isLoading }: Props) {
             {song.sections.map((s, i) => <SectionCard key={i} section={s} />)}
 
             {(song.suggestedTempo || song.suggestedKey || song.suggestedMood) && (
-              <div className="mt-2 pt-4 border-t border-zinc-800 flex flex-wrap gap-2">
-                {song.suggestedTempo && <Chip label="Tempo" value={song.suggestedTempo} />}
-                {song.suggestedKey   && <Chip label="Key"   value={song.suggestedKey} />}
-                {song.suggestedMood  && <Chip label="Mood"  value={song.suggestedMood} />}
+              <div className="flex flex-wrap gap-2 pt-4 border-t border-gray-100">
+                {song.suggestedTempo && <Tag label="Tempo" value={song.suggestedTempo} />}
+                {song.suggestedKey   && <Tag label="Key"   value={song.suggestedKey} />}
+                {song.suggestedMood  && <Tag label="Mood"  value={song.suggestedMood} />}
               </div>
             )}
 
             {song.notes && (
-              <div className="mt-4 pt-4 border-t border-zinc-800">
-                <span className="text-[10px] font-black text-zinc-600 uppercase tracking-widest">Producer Notes</span>
-                <p className="mt-1.5 text-sm text-zinc-500 italic leading-relaxed">{song.notes}</p>
-              </div>
+              <p className="mt-4 pt-4 border-t border-gray-100 text-xs text-gray-400 italic leading-relaxed">
+                {song.notes}
+              </p>
             )}
           </>
         ) : null}
@@ -83,11 +73,11 @@ export default function LyricsOutput({ streaming, song, isLoading }: Props) {
   );
 }
 
-function Chip({ label, value }: { label: string; value: string }) {
+function Tag({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-800 rounded-full border border-zinc-700">
-      <span className="text-[10px] text-zinc-500 font-semibold uppercase">{label}</span>
-      <span className="text-xs text-zinc-200 font-medium">{value}</span>
+    <div className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 rounded-full border border-gray-200">
+      <span className="text-[10px] text-gray-400 font-semibold uppercase">{label}</span>
+      <span className="text-xs text-gray-700 font-medium">{value}</span>
     </div>
   );
 }
