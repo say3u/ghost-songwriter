@@ -1,8 +1,11 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import Link from "next/link";
-import { Wand2, RefreshCw, Save, LogOut, ChevronDown, ChevronUp, Loader2, Music2, Lightbulb, FileText, Mic2 } from "lucide-react";
+import { useSearchParams } from "next/navigation";
+import { Wand2, RefreshCw, Save, LogOut, ChevronDown, ChevronUp, Loader2, Music2, Lightbulb, FileText, Mic2, Share2, BarChart2, Zap } from "lucide-react";
+import { FREE_LIMIT } from "@/lib/stripe";
+import type { Subscription } from "@/lib/supabase";
 import MoodBoard from "./MoodBoard";
 import StyleSelector from "./StyleSelector";
 import LyricsOutput from "./LyricsOutput";
@@ -63,10 +66,35 @@ export default function SongwriterApp() {
   const [showAuth, setShowAuth] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [savedSongId, setSavedSongId] = useState<string | null>(null);
+  const [shareUrl, setShareUrl] = useState("");
+  const [shareCopied, setShareCopied] = useState(false);
+  const [sharing, setSharing] = useState(false);
   const [libRefresh, setLibRefresh] = useState(0);
+  const [subscription, setSubscription] = useState<Subscription | null>(null);
+  const [songCount, setSongCount] = useState(0);
+  const [upgrading, setUpgrading] = useState(false);
+  const [showUpgradeBanner, setShowUpgradeBanner] = useState(false);
+
+  const searchParams = useSearchParams();
+  const isPro = subscription?.status === "pro";
 
   const abortRef = useRef<AbortController | null>(null);
   const accentColor = getModeColor(mode);
+
+  // Load subscription + song count when user logs in
+  useEffect(() => {
+    if (!auth.user) { setSubscription(null); setSongCount(0); return; }
+    supabase.from("subscriptions").select("*").eq("user_id", auth.user.id).single()
+      .then(({ data }) => setSubscription(data as Subscription | null));
+    supabase.from("songs").select("*", { count: "exact", head: true }).eq("user_id", auth.user.id)
+      .then(({ count }) => setSongCount(count ?? 0));
+  }, [auth.user]);
+
+  // Show success banner after Stripe redirect
+  useEffect(() => {
+    if (searchParams?.get("upgraded") === "true") setShowUpgradeBanner(true);
+  }, [searchParams]);
 
   const handleVoiceResult = useCallback((text: string, vMode: VoiceMode) => {
     setInput(text);
@@ -88,12 +116,22 @@ export default function SongwriterApp() {
     };
 
     try {
+      // Pass auth token for free-tier enforcement
+      const { data: { session } } = await supabase.auth.getSession();
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (session?.access_token) headers["Authorization"] = `Bearer ${session.access_token}`;
+
       const res = await fetch("/api/generate", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify(req),
         signal: abortRef.current.signal,
       });
+      if (res.status === 402) {
+        const { error: limitErr } = await res.json();
+        setError(limitErr ?? "Generation limit reached.");
+        return;
+      }
       if (!res.ok || !res.body) throw new Error("Generation failed");
 
       const reader = res.body.getReader();
@@ -130,20 +168,62 @@ export default function SongwriterApp() {
   const saveSong = async () => {
     if (!song || !auth.user) return;
     setSaving(true);
-    const { error: dbErr } = await supabase.from("songs").insert({
+    const { data, error: dbErr } = await supabase.from("songs").insert({
       user_id: auth.user.id, input, generation_mode: mode,
       artist_styles: artistStyles, moods,
       result: song as unknown as Record<string, unknown>,
       title: song.sections[0]?.content?.split("\n")[0]?.slice(0, 60) ?? null,
-    });
+    }).select("id").single();
     setSaving(false);
-    if (!dbErr) { setSaveSuccess(true); setLibRefresh((n) => n + 1); setTimeout(() => setSaveSuccess(false), 3000); }
+    if (!dbErr && data) {
+      setSavedSongId(data.id);
+      setSongCount((n) => n + 1);
+      setSaveSuccess(true);
+      setLibRefresh((n) => n + 1);
+      setTimeout(() => setSaveSuccess(false), 3000);
+    }
+  };
+
+  const createShare = async () => {
+    if (!savedSongId || !auth.user) return;
+    setSharing(true);
+    const { data: { session } } = await supabase.auth.getSession();
+    const res = await fetch("/api/share", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session?.access_token}`,
+      },
+      body: JSON.stringify({ songId: savedSongId }),
+    });
+    const { shareId, error: shareErr } = await res.json();
+    setSharing(false);
+    if (shareErr || !shareId) return;
+    const url = `${window.location.origin}/share/${shareId}`;
+    setShareUrl(url);
+    navigator.clipboard.writeText(url).catch(() => {});
+    setShareCopied(true);
+    setTimeout(() => setShareCopied(false), 3000);
+  };
+
+  const startUpgrade = async () => {
+    if (!auth.user) { setShowAuth(true); return; }
+    setUpgrading(true);
+    const res = await fetch("/api/checkout", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId: auth.user.id, userEmail: auth.user.email }),
+    });
+    const { url, error: checkoutErr } = await res.json();
+    setUpgrading(false);
+    if (url) window.location.href = url;
+    else console.error(checkoutErr);
   };
 
   const reset = () => {
     setSong(null); setConversationHistory([]); setStreaming("");
     setError(""); setRefinement(""); setSaveSuccess(false); setInput("");
-    setBeatContext("");
+    setBeatContext(""); setSavedSongId(null); setShareUrl("");
   };
 
   const placeholder: Record<Mode, string> = {
@@ -174,19 +254,32 @@ export default function SongwriterApp() {
         <Link href="/" className="font-display font-bold text-white text-sm tracking-tight hover:opacity-70 transition-opacity">
           drifty studio
         </Link>
-        <div className="flex items-center gap-4">
-          {!auth.loading && (auth.user ? (
-            <div className="flex items-center gap-3">
-              <span className="text-xs hidden sm:block" style={{ color: "rgba(255,255,255,0.3)" }}>{auth.user.email}</span>
-              <button onClick={auth.signOut} className="flex items-center gap-1.5 text-xs transition-colors" style={{ color: "rgba(255,255,255,0.35)" }}>
+        <div className="flex items-center gap-3">
+          {!auth.loading && auth.user && (
+            <>
+              <Link href="/studio/analytics" className="flex items-center gap-1.5 text-xs transition-colors" style={{ color: "rgba(255,255,255,0.3)" }}>
+                <BarChart2 size={13} /> Analytics
+              </Link>
+              {!isPro && (
+                <button
+                  onClick={startUpgrade}
+                  disabled={upgrading}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
+                  style={{ background: "rgba(157,92,245,0.15)", color: "#9D5CF5", border: "1px solid rgba(157,92,245,0.3)" }}
+                >
+                  <Zap size={11} /> {upgrading ? "..." : "Upgrade"}
+                </button>
+              )}
+              <button onClick={auth.signOut} className="flex items-center gap-1.5 text-xs transition-colors" style={{ color: "rgba(255,255,255,0.3)" }}>
                 <LogOut size={12} /> Sign out
               </button>
-            </div>
-          ) : (
+            </>
+          )}
+          {!auth.loading && !auth.user && (
             <button onClick={() => setShowAuth(true)} className="text-xs font-medium transition-colors" style={{ color: "rgba(255,255,255,0.4)" }}>
               Sign in
             </button>
-          ))}
+          )}
         </div>
       </header>
 
@@ -319,6 +412,14 @@ export default function SongwriterApp() {
 
           {/* Generate */}
           <div className="flex-none p-4 space-y-3" style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+            {auth.user && !isPro && songCount >= FREE_LIMIT - 3 && (
+              <div className="flex items-center justify-between text-[10px] px-1">
+                <span style={{ color: songCount >= FREE_LIMIT ? "#f87171" : "rgba(255,255,255,0.3)" }}>
+                  {Math.max(FREE_LIMIT - songCount, 0)} free {FREE_LIMIT - songCount === 1 ? "song" : "songs"} left
+                </span>
+                <button onClick={startUpgrade} className="font-semibold" style={{ color: "#9D5CF5" }}>Upgrade →</button>
+              </div>
+            )}
             {error && (
               <p className="text-xs text-red-400 rounded-lg px-3 py-2 text-center" style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)" }}>
                 {error}
@@ -343,6 +444,12 @@ export default function SongwriterApp() {
 
         {/* Right panel */}
         <div className="flex-1 overflow-y-auto" style={{ background: "#0a0a0a" }}>
+          {showUpgradeBanner && (
+            <div className="mx-8 mt-6 px-5 py-3 rounded-2xl flex items-center justify-between" style={{ background: "rgba(157,92,245,0.12)", border: "1px solid rgba(157,92,245,0.3)" }}>
+              <p className="text-sm font-semibold" style={{ color: "#9D5CF5" }}>You&apos;re now on Pro — unlimited songs!</p>
+              <button onClick={() => setShowUpgradeBanner(false)} className="text-xs" style={{ color: "rgba(157,92,245,0.6)" }}>✕</button>
+            </div>
+          )}
           {!song && !isLoading && !streaming ? (
             <div className="flex flex-col items-center justify-center h-full text-center px-12">
               <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-5" style={{ background: `${accentColor}18`, border: `1px solid ${accentColor}33` }}>
@@ -375,14 +482,26 @@ export default function SongwriterApp() {
                     </button>
                     <ExportButton song={song} filename="drifty-lyrics" />
                     {auth.user ? (
-                      <button onClick={saveSong} disabled={saving || saveSuccess}
-                        className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all"
-                        style={saveSuccess
-                          ? { background: "rgba(34,197,94,0.12)", color: "#4ade80", border: "1px solid rgba(34,197,94,0.25)" }
-                          : { background: "#1a1a1a", color: "#fff", border: "1px solid rgba(255,255,255,0.08)" }}>
-                        {saving ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />}
-                        {saveSuccess ? "Saved!" : "Save"}
-                      </button>
+                      <>
+                        <button onClick={saveSong} disabled={saving || saveSuccess}
+                          className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all"
+                          style={saveSuccess
+                            ? { background: "rgba(34,197,94,0.12)", color: "#4ade80", border: "1px solid rgba(34,197,94,0.25)" }
+                            : { background: "#1a1a1a", color: "#fff", border: "1px solid rgba(255,255,255,0.08)" }}>
+                          {saving ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />}
+                          {saveSuccess ? "Saved!" : "Save"}
+                        </button>
+                        {savedSongId && (
+                          <button onClick={createShare} disabled={sharing}
+                            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all"
+                            style={shareCopied
+                              ? { background: "rgba(34,197,94,0.12)", color: "#4ade80", border: "1px solid rgba(34,197,94,0.25)" }
+                              : { background: "#1a1a1a", color: "rgba(255,255,255,0.7)", border: "1px solid rgba(255,255,255,0.08)" }}>
+                            {sharing ? <Loader2 size={13} className="animate-spin" /> : <Share2 size={13} />}
+                            {shareCopied ? "Link copied!" : shareUrl ? "Copy link" : "Share"}
+                          </button>
+                        )}
+                      </>
                     ) : (
                       <button onClick={() => setShowAuth(true)}
                         className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm transition-all"

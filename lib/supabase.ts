@@ -34,4 +34,12 @@ export type DbSong = {
   moods: string[];
   result: Record<string, unknown>;
   created_at: string;
+  share_id: string | null;
+};
+
+export type Subscription = {
+  user_id: string;
+  stripe_customer_id: string | null;
+  stripe_subscription_id: string | null;
+  status: "free" | "pro";
 };

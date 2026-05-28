@@ -6,17 +6,39 @@ import type { GeneratedSong, SongSection } from "@/types";
 type Props = { streaming: string; song: GeneratedSong | null; isLoading: boolean; accentColor?: string };
 
 function SectionCard({ section, accentColor }: { section: SongSection; accentColor: string }) {
+  const lines = section.content.split("\n");
+  const syllables = section.syllables ?? [];
+  const total = syllables.reduce((a, b) => a + b, 0);
+
   return (
     <div className="mb-7">
-      <span
-        className="font-display inline-block text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full mb-3"
-        style={{ background: `${accentColor}22`, color: accentColor }}
-      >
-        {section.label}
-      </span>
-      <p className="text-white/85 leading-8 whitespace-pre-line text-[15px]">
-        {section.content}
-      </p>
+      <div className="flex items-center gap-2.5 mb-3">
+        <span
+          className="font-display inline-block text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full"
+          style={{ background: `${accentColor}22`, color: accentColor }}
+        >
+          {section.label}
+        </span>
+        {total > 0 && (
+          <span className="text-[10px] tabular-nums" style={{ color: "rgba(255,255,255,0.2)" }}>
+            {total} syl
+          </span>
+        )}
+      </div>
+      <div>
+        {lines.map((line, i) => (
+          <div key={i} className="flex items-baseline justify-between gap-4" style={{ lineHeight: "2rem" }}>
+            <span className="text-[15px]" style={{ color: "rgba(255,255,255,0.85)" }}>
+              {line || " "}
+            </span>
+            {syllables[i] != null && (
+              <span className="text-[10px] tabular-nums shrink-0" style={{ color: "rgba(255,255,255,0.18)" }}>
+                {syllables[i]}
+              </span>
+            )}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
