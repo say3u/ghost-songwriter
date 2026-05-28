@@ -1,4 +1,18 @@
-import type { GenerationRequest } from "@/types";
+import type { GenerationRequest, SongStructureConfig } from "@/types";
+
+function buildStructureClause(config?: SongStructureConfig): string {
+  if (!config) return "Include: Verse 1, Pre-Chorus (optional), Chorus, Verse 2, Bridge, and Outro (optional).";
+  const parts: string[] = [];
+  if (config.hasIntro) parts.push("Intro");
+  for (let i = 1; i <= config.verses; i++) {
+    parts.push(`Verse ${i}`);
+    if (config.hasPreChorus) parts.push("Pre-Chorus");
+    parts.push("Chorus");
+  }
+  if (config.hasBridge) { parts.push("Bridge"); parts.push("Chorus"); }
+  if (config.hasOutro) parts.push("Outro");
+  return `Structure (follow exactly): ${parts.join(" → ")}.`;
+}
 
 export function buildUserPrompt(req: GenerationRequest): string {
   const {
@@ -33,7 +47,7 @@ Rhyme scheme: ${rhymeScheme}
 Language: ${language}
 ${examplesClause}
 
-Include: Verse 1, Pre-Chorus (optional), Chorus, Verse 2, Bridge, and Outro (optional).`;
+${buildStructureClause(req.structureConfig)}`;
   }
 
   const beatAnalysis = (req as any).beatContext
@@ -49,7 +63,7 @@ Rhyme scheme: ${rhymeScheme}
 Language: ${language}
 ${examplesClause}${beatAnalysis}
 
-Match the energy, pocket, and phrasing to the described beat. Include: Verse 1, Pre-Chorus (optional), Chorus, Verse 2, Bridge.`;
+Match the energy, pocket, and phrasing to the described beat. ${buildStructureClause(req.structureConfig)}`;
 }
 
 export function buildExpandPrompt(req: GenerationRequest): string {

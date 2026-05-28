@@ -17,9 +17,51 @@ import SongLibrary from "./SongLibrary";
 import RevisionHistory from "./RevisionHistory";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/lib/supabase";
-import type { GenerationRequest, GeneratedSong, Revision, RhymeScheme, Language, Message, VoiceMode } from "@/types";
+import type { GenerationRequest, GeneratedSong, Revision, RhymeScheme, Language, Message, VoiceMode, SongStructureConfig } from "@/types";
 
 const LANGUAGES: Language[] = ["English", "Spanish", "French", "Portuguese", "German"];
+
+// ── Genre presets ──────────────────────────────────────────────────────────
+
+type GenrePreset = {
+  label: string;
+  emoji: string;
+  rhyme: RhymeScheme;
+  moods: string[];
+  styles: string[];
+};
+
+const GENRE_PRESETS: GenrePreset[] = [
+  { label: "Trap",    emoji: "🔥", rhyme: "AABB", moods: ["hype", "dark"],            styles: ["Travis Scott", "Future"] },
+  { label: "R&B",     emoji: "💜", rhyme: "ABAB", moods: ["romantic", "chill"],       styles: ["Frank Ocean", "SZA"] },
+  { label: "Country", emoji: "🤠", rhyme: "ABCB", moods: ["nostalgic", "melancholic"],styles: ["Morgan Wallen"] },
+  { label: "Pop",     emoji: "✨", rhyme: "AABB", moods: ["euphoric", "romantic"],    styles: ["Taylor Swift"] },
+  { label: "Drill",   emoji: "🌀", rhyme: "AABB", moods: ["dark", "angry"],           styles: ["Pop Smoke"] },
+  { label: "Indie",   emoji: "🌿", rhyme: "free", moods: ["melancholic", "chill"],    styles: ["Phoebe Bridgers"] },
+];
+
+// ── Structure preview ──────────────────────────────────────────────────────
+
+function buildStructurePreview(c: SongStructureConfig): string {
+  const p: string[] = [];
+  if (c.hasIntro) p.push("Intro");
+  for (let i = 1; i <= c.verses; i++) {
+    p.push(`V${i}`);
+    if (c.hasPreChorus) p.push("Pre-Ch.");
+    p.push("Chorus");
+  }
+  if (c.hasBridge) { p.push("Bridge"); p.push("Chorus"); }
+  if (c.hasOutro) p.push("Outro");
+  return p.join(" → ");
+}
+
+const DEFAULT_STRUCTURE: SongStructureConfig = {
+  verses: 2,
+  hasIntro: false,
+  hasPreChorus: false,
+  hasBridge: true,
+  hasOutro: false,
+};
 const RHYME_SCHEMES: { value: RhymeScheme; label: string }[] = [
   { value: "AABB", label: "AABB" },
   { value: "ABAB", label: "ABAB" },
@@ -53,6 +95,8 @@ export default function SongwriterApp() {
   const [voiceMode, setVoiceMode] = useState<VoiceMode | undefined>(undefined);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [beatContext, setBeatContext] = useState("");
+  const [structureConfig, setStructureConfig] = useState<SongStructureConfig>(DEFAULT_STRUCTURE);
+  const [activePreset, setActivePreset] = useState<string | null>(null);
 
   const [streaming, setStreaming] = useState("");
   const [song, setSong] = useState<GeneratedSong | null>(null);
@@ -120,6 +164,7 @@ export default function SongwriterApp() {
     const req: GenerationRequest & { refinement?: string; beatContext?: string } = {
       mode, input, artistStyles, moods, rhymeScheme, language,
       temperature, conversationHistory, voiceMode,
+      structureConfig: showAdvancedSection ? structureConfig : undefined,
       ...(opts.refine ? { refinement: opts.refine } : {}),
       ...(beatContext ? { beatContext } : {}),
     };
@@ -235,6 +280,16 @@ export default function SongwriterApp() {
     setBeatContext(""); setSavedSongId(null); setShareUrl("");
   };
 
+  const handleRemix = useCallback((lyricsContent: string) => {
+    setMode("expand-lyrics");
+    setInput(lyricsContent);
+    setSong(null);
+    setConversationHistory([]);
+    setError("");
+    setSavedSongId(null);
+    setShareUrl("");
+  }, []);
+
   const placeholder: Record<Mode, string> = {
     "lyrics-from-idea": "What's your song about? Late nights, heartbreak, a new chapter...",
     "lyrics-from-beat": "Describe the beat — dark trap, 140 BPM, heavy 808s, eerie piano...",
@@ -328,6 +383,39 @@ export default function SongwriterApp() {
               <BeatUpload onAnalyzed={(desc) => setBeatContext(desc)} onClear={() => setBeatContext("")} accentColor={accentColor} />
             )}
 
+            {/* Genre presets */}
+            {showMoods && (
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-widest mb-2" style={{ color: "rgba(255,255,255,0.25)" }}>Quick preset</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {GENRE_PRESETS.map((preset) => {
+                    const isActive = activePreset === preset.label;
+                    return (
+                      <button
+                        key={preset.label}
+                        onClick={() => {
+                          if (isActive) {
+                            setActivePreset(null);
+                          } else {
+                            setActivePreset(preset.label);
+                            setRhymeScheme(preset.rhyme);
+                            setMoods(preset.moods);
+                            setArtistStyles(preset.styles);
+                          }
+                        }}
+                        className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium transition-all"
+                        style={isActive
+                          ? { background: `${accentColor}22`, color: accentColor, border: `1px solid ${accentColor}44` }
+                          : { background: "rgba(255,255,255,0.05)", color: "rgba(255,255,255,0.5)", border: "1px solid rgba(255,255,255,0.07)" }}
+                      >
+                        <span>{preset.emoji}</span> {preset.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             <div>
               <label className="block text-[10px] font-bold uppercase tracking-widest mb-1.5" style={{ color: "rgba(255,255,255,0.25)" }}>
                 {inputLabel[mode]}
@@ -402,7 +490,42 @@ export default function SongwriterApp() {
                         ))}
                       </div>
                     </div>
-                    <div>
+                    {/* Structure picker */}
+                  <div>
+                      <p className="text-[10px] font-bold uppercase tracking-widest mb-2" style={{ color: "rgba(255,255,255,0.25)" }}>Structure</p>
+                      <div className="flex items-center gap-3 mb-2">
+                        <span className="text-[11px]" style={{ color: "rgba(255,255,255,0.35)" }}>Verses</span>
+                        <div className="flex gap-1">
+                          {([1, 2, 3] as const).map((n) => (
+                            <button key={n}
+                              onClick={() => setStructureConfig((s) => ({ ...s, verses: n }))}
+                              className="w-7 h-7 rounded-lg text-xs font-semibold transition-all"
+                              style={structureConfig.verses === n
+                                ? { background: `${accentColor}22`, color: accentColor, border: `1px solid ${accentColor}44` }
+                                : { background: "#1a1a1a", color: "rgba(255,255,255,0.35)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                              {n}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap gap-1.5 mb-2">
+                        {([ { key: "hasIntro", label: "Intro" }, { key: "hasPreChorus", label: "Pre-Ch." }, { key: "hasBridge", label: "Bridge" }, { key: "hasOutro", label: "Outro" } ] as const).map(({ key, label }) => (
+                          <button key={key}
+                            onClick={() => setStructureConfig((s) => ({ ...s, [key]: !s[key] }))}
+                            className="px-2.5 py-1 rounded-full text-xs font-medium transition-all"
+                            style={structureConfig[key]
+                              ? { background: `${accentColor}22`, color: accentColor, border: `1px solid ${accentColor}44` }
+                              : { background: "#1a1a1a", color: "rgba(255,255,255,0.35)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                            {label}
+                          </button>
+                        ))}
+                      </div>
+                      <p className="text-[10px] leading-relaxed" style={{ color: "rgba(255,255,255,0.2)" }}>
+                        {buildStructurePreview(structureConfig)}
+                      </p>
+                    </div>
+
+                  <div>
                       <div className="flex justify-between mb-2">
                         <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: "rgba(255,255,255,0.25)" }}>Creativity</p>
                         <p className="text-xs" style={{ color: "rgba(255,255,255,0.3)" }}>
@@ -445,6 +568,7 @@ export default function SongwriterApp() {
               <SongLibrary
                 userId={auth.user.id}
                 onLoad={(s, i) => { setSong(s); setInput(i); setConversationHistory([]); }}
+                onRemix={handleRemix}
                 refreshTrigger={libRefresh}
               />
             )}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
-import { Play, Pause, Pencil, Check } from "lucide-react";
+import { Play, Pause, Pencil, Check, Copy, Activity } from "lucide-react";
 import type { GeneratedSong, SongSection } from "@/types";
 
 type Props = {
@@ -33,12 +33,111 @@ function parseBpm(tempo?: string): number {
   return m ? parseInt(m[1]) : 0;
 }
 
+// ── Rap flow bar ───────────────────────────────────────────────────────────
+
+const GRID = 16;
+
+function syllableColor(n: number): string {
+  if (n <= 5) return "#3D8EF0";  // sparse — chill
+  if (n <= 9) return "#FF6D3B";  // medium
+  return "#E8437A";              // dense — fast
+}
+
+function FlowBar({ syllables }: { syllables: number[] }) {
+  return (
+    <div className="space-y-1.5 py-1">
+      {syllables.map((count, i) => (
+        <div key={i} className="flex items-center gap-2">
+          <div className="flex gap-[2px] flex-1">
+            {Array.from({ length: GRID }, (_, j) => (
+              <div
+                key={j}
+                className="flex-1 rounded-[1px]"
+                style={{
+                  height: 6,
+                  background: j < count ? syllableColor(count) : "rgba(255,255,255,0.05)",
+                }}
+              />
+            ))}
+          </div>
+          <span className="text-[9px] tabular-nums w-4 text-right shrink-0" style={{ color: "rgba(255,255,255,0.22)" }}>
+            {count}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ── Title suggestions ──────────────────────────────────────────────────────
+
+function TitleSuggestions({ song, accentColor }: { song: GeneratedSong; accentColor: string }) {
+  const [titles, setTitles] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
+
+  useEffect(() => {
+    const content = song.sections.map((s) => `[${s.label}]\n${s.content}`).join("\n\n");
+    setLoading(true);
+    fetch("/api/titles", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ content }),
+    })
+      .then((r) => r.json())
+      .then(({ titles: t }) => setTitles(Array.isArray(t) ? t : []))
+      .catch(() => setTitles([]))
+      .finally(() => setLoading(false));
+  }, [song]);
+
+  if (loading) {
+    return (
+      <div className="flex gap-2 mb-5">
+        {[80, 96, 72].map((w, i) => (
+          <div key={i} className="h-7 rounded-full animate-pulse" style={{ width: w, background: "rgba(255,255,255,0.06)" }} />
+        ))}
+      </div>
+    );
+  }
+
+  if (!titles.length) return null;
+
+  return (
+    <div className="mb-5">
+      <p className="text-[10px] font-bold uppercase tracking-widest mb-2" style={{ color: "rgba(255,255,255,0.2)" }}>
+        Suggested titles
+      </p>
+      <div className="flex flex-wrap gap-2">
+        {titles.map((title, i) => (
+          <button
+            key={i}
+            onClick={() => {
+              navigator.clipboard.writeText(title).catch(() => {});
+              setCopiedIdx(i);
+              setTimeout(() => setCopiedIdx(null), 2000);
+            }}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all"
+            style={
+              copiedIdx === i
+                ? { background: `${accentColor}22`, color: accentColor, border: `1px solid ${accentColor}44` }
+                : { background: "rgba(255,255,255,0.05)", color: "rgba(255,255,255,0.65)", border: "1px solid rgba(255,255,255,0.08)" }
+            }
+          >
+            {copiedIdx === i ? <Check size={10} /> : <Copy size={10} />}
+            {title}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ── Editable section card ──────────────────────────────────────────────────
 
 function SectionCard({
   section, accentColor, index,
   activeSection, activeLine,
-  onEdit,
+  onEdit, showFlow,
 }: {
   section: SongSection;
   accentColor: string;
@@ -46,19 +145,29 @@ function SectionCard({
   activeSection: number;
   activeLine: number;
   onEdit?: (i: number, content: string) => void;
+  showFlow: boolean;
 }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(section.content);
+  const [copied, setCopied] = useState(false);
+
   const lines = section.content.split("\n");
   const syllables = section.syllables ?? [];
-  const total = syllables.reduce((a, b) => a + b, 0);
+  const totalSyl = syllables.reduce((a, b) => a + b, 0);
+  const totalWords = section.content.split(/\s+/).filter(Boolean).length;
   const isActiveSection = activeSection === index;
+  const hasSyllables = syllables.some((s) => s > 0);
 
-  // Keep draft in sync when song regenerated
   useEffect(() => { setDraft(section.content); }, [section.content]);
 
   const save = () => { onEdit?.(index, draft); setEditing(false); };
   const cancel = () => { setDraft(section.content); setEditing(false); };
+
+  const copySection = () => {
+    navigator.clipboard.writeText(section.content).catch(() => {});
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   return (
     <div className="mb-7">
@@ -69,29 +178,37 @@ function SectionCard({
         >
           {section.label}
         </span>
-        {total > 0 && (
-          <span className="text-[10px] tabular-nums" style={{ color: "rgba(255,255,255,0.2)" }}>
-            {total} syl
-          </span>
-        )}
+
+        <span className="text-[10px] tabular-nums" style={{ color: "rgba(255,255,255,0.2)" }}>
+          {totalSyl > 0 ? `${totalSyl} syl · ` : ""}{totalWords}w
+        </span>
+
         {!editing ? (
-          <button
-            onClick={() => setEditing(true)}
-            className="ml-auto p-1 rounded-lg opacity-0 group-hover:opacity-100 transition-all"
-            title="Edit section"
-            style={{ color: "rgba(255,255,255,0.25)" }}
-            onMouseEnter={e => (e.currentTarget.style.color = "rgba(255,255,255,0.7)")}
-            onMouseLeave={e => (e.currentTarget.style.color = "rgba(255,255,255,0.25)")}
-          >
-            <Pencil size={11} />
-          </button>
+          <div className="ml-auto flex items-center gap-1">
+            <button
+              onClick={copySection}
+              className="p-1 rounded-lg opacity-0 group-hover:opacity-100 transition-all"
+              title="Copy section"
+              style={{ color: copied ? accentColor : "rgba(255,255,255,0.25)" }}
+              onMouseEnter={(e) => { if (!copied) e.currentTarget.style.color = "rgba(255,255,255,0.7)"; }}
+              onMouseLeave={(e) => { if (!copied) e.currentTarget.style.color = "rgba(255,255,255,0.25)"; }}
+            >
+              {copied ? <Check size={11} /> : <Copy size={11} />}
+            </button>
+            <button
+              onClick={() => setEditing(true)}
+              className="p-1 rounded-lg opacity-0 group-hover:opacity-100 transition-all"
+              title="Edit section"
+              style={{ color: "rgba(255,255,255,0.25)" }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.7)")}
+              onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.25)")}
+            >
+              <Pencil size={11} />
+            </button>
+          </div>
         ) : (
           <div className="ml-auto flex items-center gap-2">
-            <button
-              onClick={cancel}
-              className="text-[10px] px-2 py-0.5 rounded-lg transition-colors"
-              style={{ color: "rgba(255,255,255,0.35)" }}
-            >
+            <button onClick={cancel} className="text-[10px] px-2 py-0.5 rounded-lg" style={{ color: "rgba(255,255,255,0.35)" }}>
               Cancel
             </button>
             <button
@@ -108,7 +225,7 @@ function SectionCard({
       {editing ? (
         <textarea
           value={draft}
-          onChange={e => setDraft(e.target.value)}
+          onChange={(e) => setDraft(e.target.value)}
           autoFocus
           className="w-full rounded-xl px-3.5 py-3 text-[15px] leading-8 resize-none focus:outline-none transition-colors"
           style={{
@@ -118,6 +235,8 @@ function SectionCard({
             minHeight: `${lines.length * 32 + 24}px`,
           }}
         />
+      ) : showFlow && hasSyllables ? (
+        <FlowBar syllables={syllables} />
       ) : (
         <div>
           {lines.map((line, i) => (
@@ -168,14 +287,15 @@ export default function LyricsOutput({ streaming, song, isLoading, accentColor =
   const [isPlaying, setIsPlaying] = useState(false);
   const [activeSection, setActiveSection] = useState(-1);
   const [activeLine, setActiveLine] = useState(-1);
+  const [showFlow, setShowFlow] = useState(false);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const bpm = parseBpm(song?.suggestedTempo);
-
   const allLines = song?.sections.flatMap((s, si) =>
     s.content.split("\n").map((_, li) => ({ si, li }))
   ) ?? [];
+  const hasSyllableData = song?.sections.some((s) => s.syllables?.some((v) => v > 0)) ?? false;
 
   const stopKaraoke = useCallback(() => {
     if (timerRef.current) clearInterval(timerRef.current);
@@ -189,20 +309,16 @@ export default function LyricsOutput({ streaming, song, isLoading, accentColor =
   const startKaraoke = useCallback(() => {
     if (!bpm || allLines.length === 0) return;
     const msPerBeat = 60000 / bpm;
-    const msPerLine = msPerBeat * 4; // 1 bar per line
-
+    const msPerLine = msPerBeat * 4;
     const ctx = new AudioContext();
     audioCtxRef.current = ctx;
-
     const scheduleBar = (startAt: number) => {
       for (let b = 0; b < 4; b++) playClick(ctx, startAt + b * (msPerBeat / 1000), b === 0);
     };
-
     let idx = 0;
     setActiveSection(allLines[0].si);
     setActiveLine(allLines[0].li);
     scheduleBar(ctx.currentTime);
-
     timerRef.current = setInterval(() => {
       idx++;
       if (idx >= allLines.length) { stopKaraoke(); return; }
@@ -210,11 +326,9 @@ export default function LyricsOutput({ streaming, song, isLoading, accentColor =
       setActiveLine(allLines[idx].li);
       scheduleBar(ctx.currentTime);
     }, msPerLine);
-
     setIsPlaying(true);
   }, [bpm, allLines, stopKaraoke]);
 
-  // Stop on unmount or new song
   useEffect(() => () => { stopKaraoke(); }, [stopKaraoke]);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { if (isPlaying) stopKaraoke(); }, [song]);
@@ -231,7 +345,7 @@ export default function LyricsOutput({ streaming, song, isLoading, accentColor =
         {isLoading ? (
           <>
             <div className="flex items-end gap-1 h-5">
-              {[0,1,2,3,4].map(n => (
+              {[0, 1, 2, 3, 4].map((n) => (
                 <span key={n} className="wave-bar" style={{ background: accentColor }} />
               ))}
             </div>
@@ -245,6 +359,20 @@ export default function LyricsOutput({ streaming, song, isLoading, accentColor =
             <span className="font-display text-xs font-semibold uppercase tracking-widest flex-1" style={{ color: "rgba(255,255,255,0.35)" }}>
               Your Lyrics
             </span>
+
+            {hasSyllableData && song && (
+              <button
+                onClick={() => setShowFlow((v) => !v)}
+                title="Toggle flow analyzer"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all"
+                style={showFlow
+                  ? { background: `${accentColor}22`, color: accentColor, border: `1px solid ${accentColor}44` }
+                  : { background: "rgba(255,255,255,0.05)", color: "rgba(255,255,255,0.5)", border: "1px solid rgba(255,255,255,0.08)" }}
+              >
+                <Activity size={11} /> Flow
+              </button>
+            )}
+
             {bpm > 0 && song && (
               <button
                 onClick={isPlaying ? stopKaraoke : startKaraoke}
@@ -263,7 +391,6 @@ export default function LyricsOutput({ streaming, song, isLoading, accentColor =
       {/* Body */}
       <div className="flex-1 overflow-y-auto px-6 py-6">
         {isLoading ? (
-          /* Skeleton — no raw JSON */
           <div className="space-y-8 animate-pulse">
             {[80, 65, 80, 70].map((w, i) => (
               <div key={i}>
@@ -276,6 +403,8 @@ export default function LyricsOutput({ streaming, song, isLoading, accentColor =
           </div>
         ) : song ? (
           <>
+            <TitleSuggestions song={song} accentColor={accentColor} />
+
             {song.sections.map((s, i) => (
               <SectionCard
                 key={i}
@@ -285,6 +414,7 @@ export default function LyricsOutput({ streaming, song, isLoading, accentColor =
                 activeSection={activeSection}
                 activeLine={activeLine}
                 onEdit={onEdit}
+                showFlow={showFlow}
               />
             ))}
 

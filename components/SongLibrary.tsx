@@ -1,21 +1,32 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { Library, Trash2, ChevronDown, ChevronUp, Loader2 } from "lucide-react";
+import { Library, Trash2, ChevronDown, ChevronUp, Loader2, Shuffle } from "lucide-react";
 import { supabase, type DbSong } from "@/lib/supabase";
 import type { GeneratedSong } from "@/types";
 
-type Props = { userId: string; onLoad: (song: GeneratedSong, input: string) => void; refreshTrigger: number };
+type Props = {
+  userId: string;
+  onLoad: (song: GeneratedSong, input: string) => void;
+  onRemix: (lyricsContent: string) => void;
+  refreshTrigger: number;
+};
 
-export default function SongLibrary({ userId, onLoad, refreshTrigger }: Props) {
+export default function SongLibrary({ userId, onLoad, onRemix, refreshTrigger }: Props) {
   const [songs, setSongs] = useState<DbSong[]>([]);
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [remixing, setRemixing] = useState<string | null>(null);
 
   const fetchSongs = useCallback(async () => {
     setLoading(true);
-    const { data } = await supabase.from("songs").select("*").eq("user_id", userId).order("created_at", { ascending: false }).limit(50);
+    const { data } = await supabase
+      .from("songs")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(50);
     setSongs(data ?? []);
     setLoading(false);
   }, [userId]);
@@ -27,6 +38,16 @@ export default function SongLibrary({ userId, onLoad, refreshTrigger }: Props) {
     await supabase.from("songs").delete().eq("id", id);
     setSongs((prev) => prev.filter((s) => s.id !== id));
     setDeleting(null);
+  };
+
+  const remixSong = (song: DbSong) => {
+    setRemixing(song.id);
+    const generated = song.result as unknown as GeneratedSong;
+    const content = generated.sections
+      .map((s) => `[${s.label}]\n${s.content}`)
+      .join("\n\n");
+    onRemix(content);
+    setTimeout(() => setRemixing(null), 800);
   };
 
   return (
@@ -61,12 +82,16 @@ export default function SongLibrary({ userId, onLoad, refreshTrigger }: Props) {
               {songs.map((song) => (
                 <div
                   key={song.id}
-                  className="flex items-center justify-between px-5 py-3.5 transition-colors"
+                  className="flex items-center gap-1.5 px-4 py-3 transition-colors"
                   style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}
                   onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.03)")}
                   onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
                 >
-                  <button className="flex-1 text-left min-w-0" onClick={() => onLoad(song.result as unknown as GeneratedSong, song.input)}>
+                  {/* Song info — load on click */}
+                  <button
+                    className="flex-1 text-left min-w-0"
+                    onClick={() => onLoad(song.result as unknown as GeneratedSong, song.input)}
+                  >
                     <p className="text-sm truncate font-medium" style={{ color: "rgba(255,255,255,0.8)" }}>
                       {song.title ?? `"${song.input.slice(0, 40)}${song.input.length > 40 ? "…" : ""}"`}
                     </p>
@@ -74,10 +99,27 @@ export default function SongLibrary({ userId, onLoad, refreshTrigger }: Props) {
                       {new Date(song.created_at).toLocaleDateString()} · {song.artist_styles.slice(0, 2).join(", ") || "No style"}
                     </p>
                   </button>
+
+                  {/* Remix */}
+                  <button
+                    onClick={() => remixSong(song)}
+                    disabled={remixing === song.id}
+                    title="Remix — open in Expand Lyrics mode"
+                    className="p-1.5 rounded-lg transition-all disabled:opacity-40"
+                    style={{ color: "rgba(255,255,255,0.2)" }}
+                    onMouseEnter={(e) => (e.currentTarget.style.color = "#9D5CF5")}
+                    onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.2)")}
+                  >
+                    {remixing === song.id
+                      ? <Loader2 size={12} className="animate-spin" />
+                      : <Shuffle size={12} />}
+                  </button>
+
+                  {/* Delete */}
                   <button
                     onClick={() => deleteSong(song.id)}
                     disabled={deleting === song.id}
-                    className="ml-3 transition-colors disabled:opacity-40"
+                    className="p-1.5 rounded-lg transition-all disabled:opacity-40"
                     style={{ color: "rgba(255,255,255,0.2)" }}
                     onMouseEnter={(e) => (e.currentTarget.style.color = "#ef4444")}
                     onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.2)")}

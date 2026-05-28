@@ -29,6 +29,14 @@ export type Mood = {
 
 export type VoiceMode = "idea" | "polish" | "melody";
 
+export type SongStructureConfig = {
+  verses: 1 | 2 | 3;
+  hasIntro: boolean;
+  hasPreChorus: boolean;
+  hasBridge: boolean;
+  hasOutro: boolean;
+};
+
 export type GenerationRequest = {
   mode: "lyrics-from-idea" | "lyrics-from-beat" | "expand-lyrics" | "lyrics-to-beat";
   input: string;
@@ -40,6 +48,7 @@ export type GenerationRequest = {
   fewShotExamples?: string;
   conversationHistory?: Message[];
   voiceMode?: VoiceMode;
+  structureConfig?: SongStructureConfig;
 };
 
 export type Message = {

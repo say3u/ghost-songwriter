@@ -29,15 +29,15 @@ export async function POST(req: Request) {
     .slice(0, 9);
 
   // Only update the song if it actually belongs to this user (prevents ID enumeration)
-  const { error, count } = await supabase
+  const { error, data } = await supabase
     .from("songs")
     .update({ share_id: shareId })
     .eq("id", songId)
     .eq("user_id", user.id)
-    .select("id", { count: "exact", head: true });
+    .select("id");
 
   if (error) return Response.json({ error: error.message }, { status: 500 });
-  if (count === 0) return Response.json({ error: "Song not found." }, { status: 404 });
+  if (!data || data.length === 0) return Response.json({ error: "Song not found." }, { status: 404 });
 
   return Response.json({ shareId });
 }
