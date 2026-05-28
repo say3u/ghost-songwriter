@@ -12,12 +12,12 @@ export default function StyleSelector({ selected, onChange }: Props) {
 
   return (
     <div>
-      <p className="text-xs text-white/40 mb-3 font-medium">In the style of</p>
+      <p className="text-xs font-medium text-gray-500 mb-2">In the style of</p>
       <input
         value={value}
         onChange={handleChange}
         placeholder="Drake, Billie Eilish, Taylor Swift..."
-        className="w-full bg-white/10 rounded-2xl px-4 py-3 text-sm text-white placeholder-white/30 focus:outline-none focus:bg-white/15 transition-colors border border-transparent focus:border-white/20"
+        className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-900 placeholder-gray-300 focus:outline-none focus:border-gray-400 transition-colors"
       />
     </div>
   );

@@ -4,6 +4,7 @@ import { useState, useCallback, useRef } from "react";
 import { Wand2, RefreshCw, Save, LogOut, ChevronDown, ChevronUp, Loader2 } from "lucide-react";
 import MoodBoard from "./MoodBoard";
 import StyleSelector from "./StyleSelector";
+import BeatUpload from "./BeatUpload";
 import LyricsOutput from "./LyricsOutput";
 import ExportButton from "./ExportButton";
 import VoiceInput from "./VoiceInput";
@@ -44,6 +45,9 @@ export default function SongwriterApp() {
   const [conversationHistory, setConversationHistory] = useState<Message[]>([]);
   const [revisions, setRevisions] = useState<Revision[]>([]);
 
+  const [beatContext, setBeatContext] = useState<string>("");
+  const [beatFilename, setBeatFilename] = useState<string>("");
+
   const [showAuth, setShowAuth] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
@@ -63,10 +67,11 @@ export default function SongwriterApp() {
     setIsLoading(true); setError(""); setStreaming(""); setSong(null); setSaveSuccess(false);
     abortRef.current = new AbortController();
 
-    const req: GenerationRequest & { refinement?: string } = {
+    const req: GenerationRequest & { refinement?: string; beatContext?: string } = {
       mode, input, artistStyles, moods, rhymeScheme, language,
       temperature, conversationHistory, voiceMode,
       ...(opts.refine ? { refinement: opts.refine } : {}),
+      ...(beatContext ? { beatContext } : {}),
     };
 
     try {
@@ -125,6 +130,7 @@ export default function SongwriterApp() {
   const reset = () => {
     setSong(null); setConversationHistory([]); setStreaming("");
     setError(""); setRefinement(""); setSaveSuccess(false); setInput("");
+    setBeatContext(""); setBeatFilename("");
   };
 
   return (
@@ -184,6 +190,14 @@ export default function SongwriterApp() {
                 </button>
               ))}
             </div>
+
+            {/* Beat upload */}
+            {mode === "lyrics-from-beat" && (
+              <BeatUpload
+                onAnalyzed={(desc, name) => { setBeatContext(desc); setBeatFilename(name); }}
+                onClear={() => { setBeatContext(""); setBeatFilename(""); }}
+              />
+            )}
 
             {/* Textarea */}
             <div className="space-y-2">

@@ -36,6 +36,10 @@ ${examplesClause}
 Include: Verse 1, Pre-Chorus (optional), Chorus, Verse 2, Bridge, and Outro (optional).`;
   }
 
+  const beatAnalysis = (req as any).beatContext
+    ? `\n\nUploaded beat analysis:\n${(req as any).beatContext}`
+    : "";
+
   return `Generate lyrics that fit the following beat or musical description.
 
 Beat/music description: "${input}"
@@ -43,7 +47,7 @@ ${styleClause}
 ${moodClause}
 Rhyme scheme: ${rhymeScheme}
 Language: ${language}
-${examplesClause}
+${examplesClause}${beatAnalysis}
 
 Match the energy, pocket, and phrasing to the described beat. Include: Verse 1, Pre-Chorus (optional), Chorus, Verse 2, Bridge.`;
 }
