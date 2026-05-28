@@ -82,6 +82,15 @@ export default function SongwriterApp() {
   const abortRef = useRef<AbortController | null>(null);
   const accentColor = getModeColor(mode);
 
+  const handleLyricEdit = useCallback((sectionIndex: number, newContent: string) => {
+    setSong(prev => {
+      if (!prev) return prev;
+      const sections = [...prev.sections];
+      sections[sectionIndex] = { ...sections[sectionIndex], content: newContent };
+      return { ...prev, sections };
+    });
+  }, []);
+
   // Load subscription + song count when user logs in
   useEffect(() => {
     if (!auth.user) { setSubscription(null); setSongCount(0); return; }
@@ -443,15 +452,15 @@ export default function SongwriterApp() {
         </div>
 
         {/* Right panel */}
-        <div className="flex-1 overflow-y-auto" style={{ background: "#0a0a0a" }}>
+        <div className="flex-1 flex flex-col overflow-hidden" style={{ background: "#0a0a0a" }}>
           {showUpgradeBanner && (
-            <div className="mx-8 mt-6 px-5 py-3 rounded-2xl flex items-center justify-between" style={{ background: "rgba(157,92,245,0.12)", border: "1px solid rgba(157,92,245,0.3)" }}>
+            <div className="flex-none mx-8 mt-6 px-5 py-3 rounded-2xl flex items-center justify-between" style={{ background: "rgba(157,92,245,0.12)", border: "1px solid rgba(157,92,245,0.3)" }}>
               <p className="text-sm font-semibold" style={{ color: "#9D5CF5" }}>You&apos;re now on Pro — unlimited songs!</p>
               <button onClick={() => setShowUpgradeBanner(false)} className="text-xs" style={{ color: "rgba(157,92,245,0.6)" }}>✕</button>
             </div>
           )}
           {!song && !isLoading && !streaming ? (
-            <div className="flex flex-col items-center justify-center h-full text-center px-12">
+            <div className="flex-1 flex flex-col items-center justify-center text-center px-12">
               <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-5" style={{ background: `${accentColor}18`, border: `1px solid ${accentColor}33` }}>
                 {(() => { const m = MODES.find(m => m.value === mode); const Icon = m?.icon ?? Wand2; return <Icon size={22} style={{ color: accentColor }} />; })()}
               </div>
@@ -469,11 +478,15 @@ export default function SongwriterApp() {
               </p>
             </div>
           ) : (
-            <div className="p-8 space-y-5 max-w-3xl">
-              <LyricsOutput streaming={streaming} song={song} isLoading={isLoading} accentColor={accentColor} />
+            <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+              {/* Lyrics output fills available space */}
+              <div className="flex-1 min-h-0 px-6 pt-6">
+                <LyricsOutput streaming={streaming} song={song} isLoading={isLoading} accentColor={accentColor} onEdit={handleLyricEdit} />
+              </div>
 
+              {/* Bottom action bar */}
               {song && !isLoading && (
-                <>
+                <div className="flex-none px-6 py-4 space-y-3" style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
                   <div className="flex flex-wrap items-center gap-2">
                     <button onClick={reset}
                       className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-white transition-all"
@@ -512,7 +525,7 @@ export default function SongwriterApp() {
                   </div>
 
                   {mode !== "lyrics-to-beat" && (
-                    <div className="rounded-2xl p-5 space-y-3" style={{ background: "#111", border: "1px solid rgba(255,255,255,0.07)" }}>
+                    <div className="rounded-2xl p-4 space-y-3" style={{ background: "#111", border: "1px solid rgba(255,255,255,0.07)" }}>
                       <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: "rgba(255,255,255,0.25)" }}>Refine this draft</p>
                       <div className="flex gap-2">
                         <input value={refinement} onChange={(e) => setRefinement(e.target.value)}
@@ -534,17 +547,16 @@ export default function SongwriterApp() {
                       )}
                     </div>
                   )}
-                </>
-              )}
 
-              <RevisionHistory history={revisions} onRestore={(rev) => {
-                setInput(rev.request.input); setMode(rev.request.mode as Mode);
-                setArtistStyles(rev.request.artistStyles); setMoods(rev.request.moods);
-                setSong(rev.result); setConversationHistory([]);
-              }} />
+                  <RevisionHistory history={revisions} onRestore={(rev) => {
+                    setInput(rev.request.input); setMode(rev.request.mode as Mode);
+                    setArtistStyles(rev.request.artistStyles); setMoods(rev.request.moods);
+                    setSong(rev.result); setConversationHistory([]);
+                  }} />
+                </div>
+              )}
             </div>
           )}
-
         </div>
       </div>
     </div>
