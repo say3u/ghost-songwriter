@@ -88,7 +88,7 @@ export default function Home() {
 
       {/* Footer */}
       <footer className="text-center pb-8 text-xs" style={{ color: "rgba(255,255,255,0.18)" }}>
-        built with Claude · drifty studio
+        drifty studio
       </footer>
     </main>
   );
