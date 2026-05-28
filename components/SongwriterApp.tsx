@@ -250,7 +250,7 @@ export default function SongwriterApp() {
   };
 
   const showBeatUpload = mode === "lyrics-from-beat";
-  const showVoice = mode === "lyrics-from-idea" || mode === "lyrics-from-beat";
+  const showVoice = true;
   const showMoods = mode !== "lyrics-to-beat";
   const showAdvancedSection = mode !== "lyrics-to-beat";
 

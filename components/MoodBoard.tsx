@@ -21,15 +21,15 @@ export default function MoodBoard({ selected, onChange, accentColor = "#9D5CF5" 
 
   return (
     <div>
-      <p className="text-xs mb-3 font-medium" style={{ color: "rgba(255,255,255,0.35)" }}>Pick a vibe</p>
-      <div className="flex flex-wrap gap-2">
+      <p className="text-[10px] font-bold uppercase tracking-widest mb-2.5" style={{ color: "rgba(255,255,255,0.25)" }}>Pick a vibe</p>
+      <div className="flex flex-wrap gap-1.5">
         {MOODS.map((mood) => {
           const active = selected.includes(mood.id);
           return (
             <button
               key={mood.id}
               onClick={() => toggle(mood.id)}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition-all"
+              className="flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium transition-all"
               style={
                 active
                   ? { background: `${accentColor}22`, color: accentColor, border: `1px solid ${accentColor}55` }
