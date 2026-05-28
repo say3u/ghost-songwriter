@@ -3,14 +3,14 @@
 import type { Mood } from "@/types";
 
 const MOODS: Mood[] = [
-  { id: "melancholic",   label: "Sad",       emoji: "🌧️" },
-  { id: "angry",         label: "Angry",     emoji: "🔥" },
-  { id: "euphoric",      label: "Happy",     emoji: "⚡" },
-  { id: "romantic",      label: "Love",      emoji: "🌹" },
-  { id: "hype",          label: "Hype",      emoji: "💥" },
-  { id: "chill",         label: "Chill",     emoji: "🌊" },
-  { id: "dark",          label: "Dark",      emoji: "🖤" },
-  { id: "nostalgic",     label: "Nostalgic", emoji: "🌅" },
+  { id: "melancholic",   label: "Sad",       emoji: "" },
+  { id: "angry",         label: "Angry",     emoji: "" },
+  { id: "euphoric",      label: "Happy",     emoji: "" },
+  { id: "romantic",      label: "Love",      emoji: "" },
+  { id: "hype",          label: "Hype",      emoji: "" },
+  { id: "chill",         label: "Chill",     emoji: "" },
+  { id: "dark",          label: "Dark",      emoji: "" },
+  { id: "nostalgic",     label: "Nostalgic", emoji: "" },
 ];
 
 type Props = { selected: string[]; onChange: (moods: string[]) => void };
@@ -35,7 +35,6 @@ export default function MoodBoard({ selected, onChange }: Props) {
                   : "bg-white/10 text-white/70 hover:bg-white/20 hover:text-white"
               }`}
             >
-              <span>{mood.emoji}</span>
               <span>{mood.label}</span>
             </button>
           );

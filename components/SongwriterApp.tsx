@@ -161,7 +161,7 @@ export default function SongwriterApp() {
         {!song && !isLoading && (
           <div className="text-center pt-6 pb-2">
             <h1 className="text-4xl font-black text-white leading-tight mb-3">
-              Turn your ideas<br />into lyrics ✨
+              Turn your ideas<br />into lyrics
             </h1>
             <p className="text-white/50 text-base">Describe a vibe, hum a melody, or paste an idea — we'll write the song.</p>
           </div>
@@ -174,8 +174,8 @@ export default function SongwriterApp() {
             {/* Mode toggle */}
             <div className="flex rounded-2xl bg-white/10 p-1 gap-1">
               {([
-                { value: "lyrics-from-idea", label: "💡 Idea → Lyrics" },
-                { value: "lyrics-from-beat", label: "🎵 Beat → Lyrics" },
+                { value: "lyrics-from-idea", label: "Idea → Lyrics" },
+                { value: "lyrics-from-beat", label: "Beat → Lyrics" },
               ] as const).map((m) => (
                 <button key={m.value} onClick={() => setMode(m.value)}
                   className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${
