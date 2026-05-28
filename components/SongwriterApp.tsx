@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef } from "react";
+import Link from "next/link";
 import { Wand2, RefreshCw, Save, LogOut, ChevronDown, ChevronUp, Loader2, Music2, Lightbulb, FileText, Mic2 } from "lucide-react";
 import MoodBoard from "./MoodBoard";
 import StyleSelector from "./StyleSelector";
@@ -170,12 +171,9 @@ export default function SongwriterApp() {
 
       {/* Header */}
       <header className="flex-none h-14 flex items-center justify-between px-6" style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-        <div className="flex items-center gap-3">
-          <div className="w-6 h-6 rounded-md flex items-center justify-center" style={{ background: accentColor }}>
-            <Wand2 size={12} className="text-white" />
-          </div>
-          <span className="font-display font-bold text-white text-sm tracking-tight">drifty studio</span>
-        </div>
+        <Link href="/" className="font-display font-bold text-white text-sm tracking-tight hover:opacity-70 transition-opacity">
+          drifty studio
+        </Link>
         <div className="flex items-center gap-4">
           {!auth.loading && (auth.user ? (
             <div className="flex items-center gap-3">
@@ -320,9 +318,9 @@ export default function SongwriterApp() {
           </div>
 
           {/* Generate */}
-          <div className="flex-none p-4" style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+          <div className="flex-none p-4 space-y-3" style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
             {error && (
-              <p className="text-xs text-red-400 rounded-lg px-3 py-2 mb-3 text-center" style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)" }}>
+              <p className="text-xs text-red-400 rounded-lg px-3 py-2 text-center" style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)" }}>
                 {error}
               </p>
             )}
@@ -333,6 +331,13 @@ export default function SongwriterApp() {
                 ? <><span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />Writing...</>
                 : <><Wand2 size={14} />Generate</>}
             </button>
+            {auth.user && (
+              <SongLibrary
+                userId={auth.user.id}
+                onLoad={(s, i) => { setSong(s); setInput(i); setConversationHistory([]); }}
+                refreshTrigger={libRefresh}
+              />
+            )}
           </div>
         </div>
 
@@ -418,22 +423,9 @@ export default function SongwriterApp() {
                 setArtistStyles(rev.request.artistStyles); setMoods(rev.request.moods);
                 setSong(rev.result); setConversationHistory([]);
               }} />
-
-              {auth.user && (
-                <SongLibrary userId={auth.user.id}
-                  onLoad={(s, i) => { setSong(s); setInput(i); setConversationHistory([]); }}
-                  refreshTrigger={libRefresh} />
-              )}
             </div>
           )}
 
-          {!song && !isLoading && !streaming && auth.user && (
-            <div className="px-8 pb-8 max-w-3xl">
-              <SongLibrary userId={auth.user.id}
-                onLoad={(s, i) => { setSong(s); setInput(i); setConversationHistory([]); }}
-                refreshTrigger={libRefresh} />
-            </div>
-          )}
         </div>
       </div>
     </div>
