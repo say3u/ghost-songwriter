@@ -9,7 +9,7 @@ function SectionCard({ section, accentColor }: { section: SongSection; accentCol
   return (
     <div className="mb-7">
       <span
-        className="inline-block text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full mb-3"
+        className="font-display inline-block text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full mb-3"
         style={{ background: `${accentColor}22`, color: accentColor }}
       >
         {section.label}
@@ -44,7 +44,7 @@ export default function LyricsOutput({ streaming, song, isLoading, accentColor =
         ) : (
           <div className="w-2 h-2 rounded-full" style={{ background: accentColor }} />
         )}
-        <span className="text-xs font-semibold uppercase tracking-widest" style={{ color: "rgba(255,255,255,0.35)" }}>
+        <span className="font-display text-xs font-semibold uppercase tracking-widest" style={{ color: "rgba(255,255,255,0.35)" }}>
           {isLoading ? "Writing your song..." : "Your Lyrics"}
         </span>
       </div>

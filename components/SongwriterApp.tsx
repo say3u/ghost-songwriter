@@ -174,7 +174,7 @@ export default function SongwriterApp() {
           <div className="w-6 h-6 rounded-md flex items-center justify-center" style={{ background: accentColor }}>
             <Wand2 size={12} className="text-white" />
           </div>
-          <span className="font-semibold text-white text-sm tracking-tight">Drifty Studio</span>
+          <span className="font-display font-bold text-white text-sm tracking-tight">drifty studio</span>
         </div>
         <div className="flex items-center gap-4">
           {!auth.loading && (auth.user ? (
@@ -214,7 +214,7 @@ export default function SongwriterApp() {
                   } : { borderLeft: "3px solid transparent", paddingLeft: "9px" }}>
                   <Icon size={14} style={{ color: active ? m.color : "rgba(255,255,255,0.25)" }} />
                   <div>
-                    <p className="text-xs font-semibold" style={{ color: active ? "#fff" : "rgba(255,255,255,0.55)" }}>{m.label}</p>
+                    <p className="font-display text-xs font-semibold" style={{ color: active ? "#fff" : "rgba(255,255,255,0.55)" }}>{m.label}</p>
                     <p className="text-[10px] leading-tight" style={{ color: active ? `${m.color}99` : "rgba(255,255,255,0.2)" }}>{m.desc}</p>
                   </div>
                 </button>
@@ -343,7 +343,7 @@ export default function SongwriterApp() {
               <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-5" style={{ background: `${accentColor}18`, border: `1px solid ${accentColor}33` }}>
                 {(() => { const m = MODES.find(m => m.value === mode); const Icon = m?.icon ?? Wand2; return <Icon size={22} style={{ color: accentColor }} />; })()}
               </div>
-              <h2 className="text-2xl font-bold text-white mb-2">
+              <h2 className="font-display text-2xl font-bold text-white mb-2">
                 {mode === "lyrics-from-idea" && "Turn your idea into a song"}
                 {mode === "lyrics-from-beat" && "Write to your beat"}
                 {mode === "expand-lyrics"    && "Expand your draft"}
