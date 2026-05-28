@@ -28,14 +28,6 @@ export default function Home() {
 
       {/* Hero */}
       <section className="flex flex-col items-center justify-center flex-1 text-center px-6 py-24">
-        {/* Badge */}
-        <div
-          className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold mb-8"
-          style={{ background: "rgba(157,92,245,0.12)", border: "1px solid rgba(157,92,245,0.3)", color: "#9D5CF5" }}
-        >
-          AI-powered songwriting
-        </div>
-
         <h1
           className="font-display font-extrabold leading-none tracking-tight mb-6"
           style={{ fontSize: "clamp(2.5rem, 8vw, 5.5rem)", maxWidth: "14ch" }}
