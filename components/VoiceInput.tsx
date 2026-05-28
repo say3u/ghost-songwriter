@@ -93,7 +93,8 @@ export default function VoiceInput({ onResult, disabled }: Props) {
   const startTimeRef      = useRef<number>(0);
   const streamRef         = useRef<MediaStream | null>(null);
 
-  const isSupported = typeof window !== "undefined" && !!getSpeechRec();
+  const [isSupported, setIsSupported] = useState(false);
+  useEffect(() => { setIsSupported(!!getSpeechRec()); }, []);
 
   const stop = useCallback(() => {
     try { recognitionRef.current?.stop(); } catch { /* ignore */ }
