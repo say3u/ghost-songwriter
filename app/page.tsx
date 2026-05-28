@@ -56,14 +56,19 @@ export default function Home() {
         </p>
       </section>
 
-      {/* Feature grid */}
-      <section className="px-6 pb-24 max-w-4xl mx-auto w-full">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {FEATURES.map(({ icon: Icon, label, desc, color }) => (
+      {/* Feature marquee */}
+      <section className="pb-24 w-full marquee-wrap">
+        <div className="marquee-track gap-4 px-4">
+          {[...FEATURES, ...FEATURES].map(({ icon: Icon, label, desc, color }, i) => (
             <div
-              key={label}
-              className="rounded-2xl p-6 transition-all"
-              style={{ background: "#0f0f0f", border: "1px solid rgba(255,255,255,0.06)" }}
+              key={i}
+              className="rounded-2xl p-6 flex-none"
+              style={{
+                width: 260,
+                background: "#0f0f0f",
+                border: "1px solid rgba(255,255,255,0.06)",
+                marginRight: "1rem",
+              }}
             >
               <div
                 className="w-9 h-9 rounded-xl flex items-center justify-center mb-4"
