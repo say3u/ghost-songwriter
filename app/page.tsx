@@ -59,7 +59,7 @@ export default function Home() {
       {/* Feature marquee */}
       <section className="pb-24 w-full marquee-wrap">
         <div className="marquee-track gap-4 px-4">
-          {[...FEATURES, ...FEATURES].map(({ icon: Icon, label, desc, color }, i) => (
+          {[...FEATURES, ...FEATURES, ...FEATURES, ...FEATURES].map(({ icon: Icon, label, desc, color }, i) => (
             <div
               key={i}
               className="rounded-2xl p-6 flex-none"
