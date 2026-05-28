@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef } from "react";
-import { Wand2, Music2, RefreshCw, Save, LogOut, ChevronDown, ChevronUp, Loader2 } from "lucide-react";
+import { Wand2, RefreshCw, Save, LogOut, ChevronDown, ChevronUp, Loader2 } from "lucide-react";
 import MoodBoard from "./MoodBoard";
 import StyleSelector from "./StyleSelector";
 import LyricsOutput from "./LyricsOutput";
@@ -128,65 +128,64 @@ export default function SongwriterApp() {
   };
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-[#f5f5f5]">
       {showAuth && <AuthModal onClose={() => setShowAuth(false)} auth={auth} />}
 
-      {/* ── Header ── */}
-      <header className="px-6 py-5 flex items-center justify-between max-w-2xl mx-auto">
-        <div className="flex items-center">
-          <img src="/logo.png" alt="Drifty Studio" className="h-8 w-auto" style={{ filter: "brightness(0) invert(1)" }} />
-        </div>
-
-        <div className="flex items-center gap-2">
+      {/* Header */}
+      <header className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between max-w-3xl mx-auto">
+        <span className="text-sm font-bold tracking-tight text-gray-900">Drifty Studio</span>
+        <div className="flex items-center gap-3">
           {!auth.loading && (auth.user ? (
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-white/40 hidden sm:block">{auth.user.email}</span>
-              <button onClick={auth.signOut} className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white/60 hover:text-white transition-all">
-                <LogOut size={13} />
+            <div className="flex items-center gap-3">
+              <span className="text-xs text-gray-400 hidden sm:block">{auth.user.email}</span>
+              <button onClick={auth.signOut}
+                className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-900 transition-colors">
+                <LogOut size={12} /> Sign out
               </button>
             </div>
           ) : (
             <button onClick={() => setShowAuth(true)}
-              className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-semibold transition-all border border-white/10">
-              Sign In
+              className="text-xs font-medium text-gray-600 hover:text-gray-900 transition-colors">
+              Sign in
             </button>
           ))}
         </div>
       </header>
 
-      {/* ── Main ── */}
-      <main className="max-w-2xl mx-auto px-6 pb-20 space-y-5">
+      <main className="max-w-3xl mx-auto px-6 py-10 space-y-6">
 
         {/* Hero */}
         {!song && !isLoading && (
-          <div className="text-center pt-6 pb-2">
-            <h1 className="text-4xl font-black text-white leading-tight mb-3">
-              Turn your ideas<br />into lyrics
+          <div className="pb-2">
+            <h1 className="text-3xl font-bold text-gray-900 tracking-tight mb-1">
+              Turn your ideas into lyrics
             </h1>
-            <p className="text-white/50 text-base">Describe a vibe, hum a melody, or paste an idea — we'll write the song.</p>
+            <p className="text-gray-400 text-sm">Describe a vibe, hum a melody, or paste an idea.</p>
           </div>
         )}
 
-        {/* ── Form card ── */}
+        {/* Form */}
         {!song && (
-          <div className="bg-white/10 backdrop-blur-xl rounded-3xl border border-white/10 p-6 space-y-5">
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 space-y-5">
 
-            {/* Mode toggle */}
-            <div className="flex rounded-2xl bg-white/10 p-1 gap-1">
+            {/* Mode tabs */}
+            <div className="flex border-b border-gray-200 -mx-6 px-6 gap-6">
               {([
                 { value: "lyrics-from-idea", label: "Idea → Lyrics" },
                 { value: "lyrics-from-beat", label: "Beat → Lyrics" },
               ] as const).map((m) => (
                 <button key={m.value} onClick={() => setMode(m.value)}
-                  className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${
-                    mode === m.value ? "bg-white text-black shadow-sm" : "text-white/60 hover:text-white"
+                  className={`pb-3 text-sm font-medium transition-colors border-b-2 -mb-px ${
+                    mode === m.value
+                      ? "border-gray-900 text-gray-900"
+                      : "border-transparent text-gray-400 hover:text-gray-600"
                   }`}>
                   {m.label}
                 </button>
               ))}
             </div>
 
-            {/* Textarea + voice */}
+            {/* Textarea */}
             <div className="space-y-2">
               <textarea
                 value={input}
@@ -197,16 +196,16 @@ export default function SongwriterApp() {
                     : "Describe the beat — dark trap, 140 BPM, heavy 808s, eerie piano..."
                 }
                 rows={4}
-                className="w-full bg-white/10 rounded-2xl px-4 py-3.5 text-white placeholder-white/30 text-sm focus:outline-none focus:bg-white/15 transition-colors resize-none leading-relaxed border border-transparent focus:border-white/20"
+                className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-900 placeholder-gray-300 focus:outline-none focus:border-gray-400 transition-colors resize-none leading-relaxed"
               />
               <div className="flex items-center justify-between">
                 <VoiceInput onResult={handleVoiceResult} disabled={isLoading} />
                 {voiceMode && input && (
                   <div className="flex items-center gap-2">
-                    <span className="text-xs text-purple-300">
-                      {voiceMode === "polish" ? "🎤 Polishing vocals" : "🎵 Matching melody"}
+                    <span className="text-xs text-gray-500">
+                      {voiceMode === "polish" ? "Polishing vocals" : "Matching melody"}
                     </span>
-                    <button onClick={() => setVoiceMode(undefined)} className="text-xs text-white/30 hover:text-white/60">✕</button>
+                    <button onClick={() => setVoiceMode(undefined)} className="text-xs text-gray-300 hover:text-gray-500">✕</button>
                   </div>
                 )}
               </div>
@@ -217,21 +216,22 @@ export default function SongwriterApp() {
 
             {/* Advanced toggle */}
             <button onClick={() => setShowAdvanced((v) => !v)}
-              className="flex items-center gap-1.5 text-xs text-white/30 hover:text-white/60 transition-colors">
+              className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-600 transition-colors">
               {showAdvanced ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
               More options
             </button>
 
             {showAdvanced && (
-              <div className="space-y-4 pt-1 border-t border-white/10">
-                {/* Rhyme scheme */}
-                <div className="pt-4">
-                  <p className="text-xs text-white/40 mb-2 font-medium">Rhyme scheme</p>
+              <div className="space-y-4 pt-4 border-t border-gray-100">
+                <div>
+                  <p className="text-xs font-medium text-gray-500 mb-2">Rhyme scheme</p>
                   <div className="flex gap-2">
                     {RHYME_SCHEMES.map((s) => (
                       <button key={s.value} onClick={() => setRhymeScheme(s.value)}
-                        className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all ${
-                          rhymeScheme === s.value ? "bg-white text-black" : "bg-white/10 text-white/60 hover:bg-white/20"
+                        className={`flex-1 py-2 rounded-lg text-xs font-medium transition-all ${
+                          rhymeScheme === s.value
+                            ? "bg-gray-900 text-white"
+                            : "bg-gray-100 text-gray-500 hover:bg-gray-200"
                         }`}>
                         {s.label}
                       </button>
@@ -239,14 +239,15 @@ export default function SongwriterApp() {
                   </div>
                 </div>
 
-                {/* Language */}
                 <div>
-                  <p className="text-xs text-white/40 mb-2 font-medium">Language</p>
+                  <p className="text-xs font-medium text-gray-500 mb-2">Language</p>
                   <div className="flex flex-wrap gap-2">
                     {LANGUAGES.map((l) => (
                       <button key={l} onClick={() => setLanguage(l)}
-                        className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
-                          language === l ? "bg-white text-black" : "bg-white/10 text-white/60 hover:bg-white/20"
+                        className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                          language === l
+                            ? "bg-gray-900 text-white"
+                            : "bg-gray-100 text-gray-500 hover:bg-gray-200"
                         }`}>
                         {l}
                       </button>
@@ -254,43 +255,46 @@ export default function SongwriterApp() {
                   </div>
                 </div>
 
-                {/* Creativity */}
                 <div>
                   <div className="flex justify-between mb-2">
-                    <p className="text-xs text-white/40 font-medium">Creativity</p>
-                    <p className="text-xs text-white/40">
+                    <p className="text-xs font-medium text-gray-500">Creativity</p>
+                    <p className="text-xs text-gray-400">
                       {temperature <= 0.4 ? "Safe" : temperature <= 0.7 ? "Balanced" : "Wild"} ({temperature.toFixed(1)})
                     </p>
                   </div>
                   <input type="range" min={0.1} max={1.0} step={0.1} value={temperature}
                     onChange={(e) => setTemperature(parseFloat(e.target.value))}
-                    className="w-full accent-purple-400" />
+                    className="w-full accent-gray-900" />
                 </div>
               </div>
             )}
 
-            {/* Generate */}
+            {/* Generate button */}
             <button onClick={() => generate()} disabled={!input.trim()}
-              className="w-full py-4 rounded-2xl font-black text-base tracking-wide transition-all bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white shadow-xl shadow-purple-500/25 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+              className="w-full py-3 rounded-xl font-semibold text-sm transition-all bg-gray-900 hover:bg-gray-800 text-white disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-2">
               {isLoading ? (
-                <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Writing... (tap to cancel)</>
+                <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Writing... (click to cancel)</>
               ) : (
-                <><Wand2 size={17} />Generate Lyrics</>
+                <><Wand2 size={15} />Generate Lyrics</>
               )}
             </button>
 
-            {error && <p className="text-sm text-red-300 bg-red-500/10 rounded-2xl px-4 py-3 text-center">{error}</p>}
+            {error && (
+              <p className="text-sm text-red-500 bg-red-50 rounded-xl px-4 py-3 text-center border border-red-100">
+                {error}
+              </p>
+            )}
           </div>
         )}
 
-        {/* ── Output ── */}
+        {/* Output */}
         <LyricsOutput streaming={streaming} song={song} isLoading={isLoading} />
 
-        {/* Actions below output */}
+        {/* Actions */}
         {song && !isLoading && (
           <div className="flex flex-wrap items-center gap-2">
             <button onClick={reset}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-white/10 hover:bg-white/20 text-white text-sm font-semibold transition-all">
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white border border-gray-200 text-gray-700 text-sm font-medium hover:bg-gray-50 transition-all">
               <RefreshCw size={13} /> New song
             </button>
 
@@ -298,17 +302,17 @@ export default function SongwriterApp() {
 
             {auth.user ? (
               <button onClick={saveSong} disabled={saving || saveSuccess}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-sm font-semibold transition-all ${
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
                   saveSuccess
-                    ? "bg-green-500/20 text-green-300 border border-green-500/30"
-                    : "bg-white/10 hover:bg-white/20 text-white"
+                    ? "bg-green-50 text-green-700 border border-green-200"
+                    : "bg-white border border-gray-200 text-gray-700 hover:bg-gray-50"
                 }`}>
                 {saving ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />}
                 {saveSuccess ? "Saved!" : "Save"}
               </button>
             ) : (
               <button onClick={() => setShowAuth(true)}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-white/10 hover:bg-white/20 text-white/60 hover:text-white text-sm transition-all">
+                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white border border-gray-200 text-gray-400 hover:text-gray-700 text-sm transition-all">
                 <Save size={13} /> Sign in to save
               </button>
             )}
@@ -317,20 +321,20 @@ export default function SongwriterApp() {
 
         {/* Refine */}
         {song && !isLoading && (
-          <div className="bg-white/10 backdrop-blur-xl rounded-3xl border border-white/10 p-5 space-y-3">
-            <p className="text-xs text-white/40 font-semibold uppercase tracking-widest">Refine this draft</p>
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 space-y-3">
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Refine this draft</p>
             <div className="flex gap-2">
               <input value={refinement} onChange={(e) => setRefinement(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && refinement.trim() && generate({ refine: refinement })}
                 placeholder='"Make it darker" · "Shorter hook" · "More aggressive"'
-                className="flex-1 bg-white/10 rounded-2xl px-4 py-2.5 text-sm text-white placeholder-white/30 focus:outline-none focus:bg-white/15 transition-colors" />
+                className="flex-1 rounded-xl border border-gray-200 px-4 py-2.5 text-sm text-gray-900 placeholder-gray-300 focus:outline-none focus:border-gray-400 transition-colors" />
               <button onClick={() => refinement.trim() && generate({ refine: refinement })} disabled={!refinement.trim()}
-                className="px-4 py-2.5 bg-white/20 hover:bg-white/30 disabled:opacity-40 rounded-2xl text-sm font-bold text-white transition-colors">
+                className="px-4 py-2.5 bg-gray-900 hover:bg-gray-800 disabled:opacity-30 rounded-xl text-sm font-semibold text-white transition-colors">
                 Go
               </button>
             </div>
             {conversationHistory.length > 0 && (
-              <p className="text-[10px] text-white/20">{Math.floor(conversationHistory.length / 2)} refinement(s) this session</p>
+              <p className="text-[10px] text-gray-300">{Math.floor(conversationHistory.length / 2)} refinement(s) this session</p>
             )}
           </div>
         )}

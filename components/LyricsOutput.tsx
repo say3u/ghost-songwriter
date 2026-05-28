@@ -8,7 +8,7 @@ type Props = { streaming: string; song: GeneratedSong | null; isLoading: boolean
 function SectionCard({ section }: { section: SongSection }) {
   return (
     <div className="mb-7">
-      <span className="inline-block text-[10px] font-black uppercase tracking-widest text-purple-400 bg-purple-400/10 px-2.5 py-1 rounded-full mb-3">
+      <span className="inline-block text-[10px] font-bold uppercase tracking-widest text-gray-400 bg-gray-100 px-2.5 py-1 rounded-full mb-3">
         {section.label}
       </span>
       <p className="text-gray-800 leading-8 whitespace-pre-line text-[15px]">
@@ -28,8 +28,7 @@ export default function LyricsOutput({ streaming, song, isLoading }: Props) {
   if (!isLoading && !streaming && !song) return null;
 
   return (
-    <div className="fade-up rounded-3xl bg-white shadow-2xl shadow-black/40 overflow-hidden">
-      {/* Card header */}
+    <div className="fade-up rounded-2xl bg-white border border-gray-200 shadow-sm overflow-hidden">
       <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-3">
         {isLoading ? (
           <div className="flex items-end gap-1 h-5">
@@ -37,9 +36,9 @@ export default function LyricsOutput({ streaming, song, isLoading }: Props) {
             <span className="wave-bar" /><span className="wave-bar" />
           </div>
         ) : (
-          <div className="w-2.5 h-2.5 rounded-full bg-gradient-to-br from-purple-500 to-pink-500" />
+          <div className="w-2 h-2 rounded-full bg-gray-900" />
         )}
-        <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">
+        <span className="text-xs font-semibold text-gray-400 uppercase tracking-widest">
           {isLoading ? "Writing your song..." : "Your Lyrics"}
         </span>
       </div>

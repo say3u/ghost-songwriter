@@ -29,10 +29,10 @@ export default function MoodBoard({ selected, onChange }: Props) {
             <button
               key={mood.id}
               onClick={() => toggle(mood.id)}
-              className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold transition-all ${
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition-all ${
                 active
-                  ? "bg-white text-black shadow-lg scale-105"
-                  : "bg-white/10 text-white/70 hover:bg-white/20 hover:text-white"
+                  ? "bg-gray-900 text-white"
+                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
               }`}
             >
               <span>{mood.label}</span>
