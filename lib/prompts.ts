@@ -52,6 +52,48 @@ ${examplesClause}${beatAnalysis}
 Match the energy, pocket, and phrasing to the described beat. Include: Verse 1, Pre-Chorus (optional), Chorus, Verse 2, Bridge.`;
 }
 
+export function buildExpandPrompt(req: GenerationRequest): string {
+  const styleClause = req.artistStyles.length > 0 ? `Write in the combined style of: ${req.artistStyles.join(", ")}.` : "";
+  const moodClause = req.moods.length > 0 ? `Emotional tone/mood: ${req.moods.join(", ")}.` : "";
+  return `The user has written partial or rough lyrics. Expand them into a complete, polished song while preserving their voice, phrasing, and core ideas.
+
+Existing lyrics:
+"""
+${req.input}
+"""
+
+${styleClause}
+${moodClause}
+Rhyme scheme: ${req.rhymeScheme}
+Language: ${req.language}
+
+Keep what works, complete what's missing, and structure it as a full song (Verse 1, Chorus, Verse 2, Bridge, Outro as needed). Output ONLY valid JSON.`;
+}
+
+export function buildLyricsToBeatPrompt(req: GenerationRequest): string {
+  const styleClause = req.artistStyles.length > 0 ? `Artist reference: ${req.artistStyles.join(", ")}.` : "";
+  const moodClause = req.moods.length > 0 ? `Mood: ${req.moods.join(", ")}.` : "";
+  return `Analyze the following lyrics and produce a detailed beat brief — the ideal instrumental production to match them.
+
+Lyrics:
+"""
+${req.input}
+"""
+
+${styleClause}
+${moodClause}
+
+Output ONLY valid JSON using this exact structure, with these section labels:
+{"sections":[
+  {"label":"Genre","content":"...","syllableCount":0},
+  {"label":"BPM","content":"...","syllableCount":0},
+  {"label":"Key & Scale","content":"...","syllableCount":0},
+  {"label":"Core Instruments","content":"...","syllableCount":0},
+  {"label":"Drum Pattern","content":"...","syllableCount":0},
+  {"label":"Production Notes","content":"...","syllableCount":0}
+],"notes":"Overall sonic vision in 1-2 sentences"}`;
+}
+
 export function buildRefinementPrompt(instruction: string): string {
   return `Refine the previously generated lyrics with this direction: "${instruction}"
 

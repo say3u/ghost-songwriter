@@ -1,5 +1,5 @@
 import { anthropic, SYSTEM_PROMPT } from "@/lib/claude";
-import { buildUserPrompt, buildRefinementPrompt, buildPolishPrompt, buildMelodyPrompt } from "@/lib/prompts";
+import { buildUserPrompt, buildRefinementPrompt, buildPolishPrompt, buildMelodyPrompt, buildExpandPrompt, buildLyricsToBeatPrompt } from "@/lib/prompts";
 import type { GenerationRequest } from "@/types";
 
 export const runtime = "nodejs";
@@ -17,6 +17,10 @@ export async function POST(req: Request) {
     userMessage = buildPolishPrompt(body.input, body);
   } else if (voiceMode === "melody") {
     userMessage = buildMelodyPrompt(body.input, body);
+  } else if (body.mode === "expand-lyrics") {
+    userMessage = buildExpandPrompt(body);
+  } else if (body.mode === "lyrics-to-beat") {
+    userMessage = buildLyricsToBeatPrompt(body);
   } else {
     userMessage = buildUserPrompt(body);
   }

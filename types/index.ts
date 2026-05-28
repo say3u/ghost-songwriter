@@ -30,7 +30,7 @@ export type Mood = {
 export type VoiceMode = "idea" | "polish" | "melody";
 
 export type GenerationRequest = {
-  mode: "lyrics-from-idea" | "lyrics-from-beat";
+  mode: "lyrics-from-idea" | "lyrics-from-beat" | "expand-lyrics" | "lyrics-to-beat";
   input: string;
   artistStyles: string[];
   moods: string[];
