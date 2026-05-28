@@ -30,40 +30,58 @@ export default function SongLibrary({ userId, onLoad, refreshTrigger }: Props) {
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-      <button onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center justify-between px-5 py-4 hover:bg-gray-50 transition-colors">
+    <div className="rounded-2xl overflow-hidden" style={{ background: "#111", border: "1px solid rgba(255,255,255,0.07)" }}>
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="w-full flex items-center justify-between px-5 py-4 transition-colors"
+        onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.03)")}
+        onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+      >
         <div className="flex items-center gap-2">
-          <Library size={14} className="text-gray-400" />
-          <span className="text-xs font-semibold text-gray-400 uppercase tracking-widest">
+          <Library size={14} style={{ color: "rgba(255,255,255,0.3)" }} />
+          <span className="text-xs font-semibold uppercase tracking-widest" style={{ color: "rgba(255,255,255,0.3)" }}>
             My Songs {songs.length > 0 && `(${songs.length})`}
           </span>
         </div>
-        {open ? <ChevronUp size={13} className="text-gray-300" /> : <ChevronDown size={13} className="text-gray-300" />}
+        {open
+          ? <ChevronUp size={13} style={{ color: "rgba(255,255,255,0.25)" }} />
+          : <ChevronDown size={13} style={{ color: "rgba(255,255,255,0.25)" }} />}
       </button>
 
       {open && (
-        <div className="border-t border-gray-100">
+        <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
           {loading ? (
-            <div className="flex items-center justify-center gap-2 py-8 text-sm text-gray-400">
+            <div className="flex items-center justify-center gap-2 py-8 text-sm" style={{ color: "rgba(255,255,255,0.35)" }}>
               <Loader2 size={14} className="animate-spin" /> Loading...
             </div>
           ) : songs.length === 0 ? (
-            <p className="py-8 text-center text-sm text-gray-400">No saved songs yet.</p>
+            <p className="py-8 text-center text-sm" style={{ color: "rgba(255,255,255,0.35)" }}>No saved songs yet.</p>
           ) : (
-            <div className="divide-y divide-gray-50 max-h-64 overflow-y-auto">
+            <div className="max-h-64 overflow-y-auto">
               {songs.map((song) => (
-                <div key={song.id} className="flex items-center justify-between px-5 py-3.5 hover:bg-gray-50 transition-colors">
+                <div
+                  key={song.id}
+                  className="flex items-center justify-between px-5 py-3.5 transition-colors"
+                  style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.03)")}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+                >
                   <button className="flex-1 text-left min-w-0" onClick={() => onLoad(song.result as unknown as GeneratedSong, song.input)}>
-                    <p className="text-sm text-gray-800 truncate font-medium">
+                    <p className="text-sm truncate font-medium" style={{ color: "rgba(255,255,255,0.8)" }}>
                       {song.title ?? `"${song.input.slice(0, 40)}${song.input.length > 40 ? "…" : ""}"`}
                     </p>
-                    <p className="text-[11px] text-gray-400 mt-0.5">
+                    <p className="text-[11px] mt-0.5" style={{ color: "rgba(255,255,255,0.3)" }}>
                       {new Date(song.created_at).toLocaleDateString()} · {song.artist_styles.slice(0, 2).join(", ") || "No style"}
                     </p>
                   </button>
-                  <button onClick={() => deleteSong(song.id)} disabled={deleting === song.id}
-                    className="ml-3 text-gray-300 hover:text-red-400 transition-colors disabled:opacity-40">
+                  <button
+                    onClick={() => deleteSong(song.id)}
+                    disabled={deleting === song.id}
+                    className="ml-3 transition-colors disabled:opacity-40"
+                    style={{ color: "rgba(255,255,255,0.2)" }}
+                    onMouseEnter={(e) => (e.currentTarget.style.color = "#ef4444")}
+                    onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.2)")}
+                  >
                     {deleting === song.id ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />}
                   </button>
                 </div>

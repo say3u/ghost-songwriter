@@ -25,21 +25,30 @@ export default function AuthModal({ onClose, auth }: Props) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md p-4">
-      <div className="w-full max-w-sm rounded-3xl bg-white shadow-2xl overflow-hidden">
-        <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.8)", backdropFilter: "blur(12px)" }}>
+      <div className="w-full max-w-sm rounded-3xl overflow-hidden" style={{ background: "#111", border: "1px solid rgba(255,255,255,0.1)" }}>
+        <div className="flex items-center justify-between px-6 py-5" style={{ borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
           <div>
-            <h2 className="text-lg font-black text-gray-900">{tab === "signin" ? "Welcome back 👋" : "Join Drifty Studio"}</h2>
-            <p className="text-xs text-gray-400 mt-0.5">Save your songs forever</p>
+            <h2 className="text-lg font-black text-white">{tab === "signin" ? "Welcome back" : "Join Drifty Studio"}</h2>
+            <p className="text-xs mt-0.5" style={{ color: "rgba(255,255,255,0.35)" }}>Save your songs forever</p>
           </div>
-          <button onClick={onClose} className="text-gray-300 hover:text-gray-600 transition-colors"><X size={18} /></button>
+          <button onClick={onClose} className="transition-colors" style={{ color: "rgba(255,255,255,0.25)" }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.8)")}
+            onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.25)")}>
+            <X size={18} />
+          </button>
         </div>
 
         <div className="p-6">
-          <div className="flex rounded-2xl overflow-hidden bg-gray-100 mb-5 p-1 gap-1">
+          <div className="flex rounded-2xl overflow-hidden mb-5 p-1 gap-1" style={{ background: "rgba(255,255,255,0.05)" }}>
             {(["signin", "signup"] as const).map((t) => (
               <button key={t} onClick={() => { setTab(t); setError(""); setSuccess(""); }}
-                className={`flex-1 py-2 text-sm font-bold rounded-xl transition-all ${tab === t ? "bg-white text-gray-900 shadow-sm" : "text-gray-400 hover:text-gray-600"}`}>
+                className="flex-1 py-2 text-sm font-bold rounded-xl transition-all"
+                style={
+                  tab === t
+                    ? { background: "#1e1e1e", color: "#fff" }
+                    : { color: "rgba(255,255,255,0.35)" }
+                }>
                 {t === "signin" ? "Sign In" : "Sign Up"}
               </button>
             ))}
@@ -47,15 +56,22 @@ export default function AuthModal({ onClose, auth }: Props) {
 
           <form onSubmit={submit} className="space-y-4">
             <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required placeholder="Email"
-              className="w-full bg-gray-50 border border-gray-200 rounded-2xl px-4 py-3 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-purple-400 transition-colors" />
+              className="w-full rounded-2xl px-4 py-3 text-sm focus:outline-none transition-colors"
+              style={{ background: "#161616", border: "1px solid rgba(255,255,255,0.08)", color: "#fff" }}
+              onFocus={(e) => (e.currentTarget.style.borderColor = "rgba(157,92,245,0.5)")}
+              onBlur={(e) => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)")} />
             <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} placeholder="Password"
-              className="w-full bg-gray-50 border border-gray-200 rounded-2xl px-4 py-3 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-purple-400 transition-colors" />
+              className="w-full rounded-2xl px-4 py-3 text-sm focus:outline-none transition-colors"
+              style={{ background: "#161616", border: "1px solid rgba(255,255,255,0.08)", color: "#fff" }}
+              onFocus={(e) => (e.currentTarget.style.borderColor = "rgba(157,92,245,0.5)")}
+              onBlur={(e) => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)")} />
 
-            {error   && <p className="text-sm text-red-500 bg-red-50 rounded-xl px-4 py-2.5">{error}</p>}
-            {success && <p className="text-sm text-green-600 bg-green-50 rounded-xl px-4 py-2.5">{success}</p>}
+            {error   && <p className="text-sm text-red-400 rounded-xl px-4 py-2.5" style={{ background: "rgba(239,68,68,0.1)" }}>{error}</p>}
+            {success && <p className="text-sm text-green-400 rounded-xl px-4 py-2.5" style={{ background: "rgba(34,197,94,0.1)" }}>{success}</p>}
 
             <button type="submit" disabled={loading}
-              className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 disabled:opacity-50 font-bold text-sm text-white transition-all flex items-center justify-center gap-2 shadow-lg shadow-purple-500/25">
+              className="w-full py-3.5 rounded-2xl font-bold text-sm text-white transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+              style={{ background: "linear-gradient(135deg, #9D5CF5, #E8437A)" }}>
               {loading && <Loader2 size={14} className="animate-spin" />}
               {tab === "signin" ? "Sign In" : "Create Account"}
             </button>

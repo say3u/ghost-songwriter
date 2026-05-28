@@ -3,7 +3,7 @@
 import { useState, useRef } from "react";
 import { Upload, X, Loader2, Music } from "lucide-react";
 
-type Props = { onAnalyzed: (description: string, filename: string) => void; onClear: () => void };
+type Props = { onAnalyzed: (description: string, filename: string) => void; onClear: () => void; accentColor?: string };
 
 async function analyzeBeat(file: File): Promise<string> {
   const audioCtx = new AudioContext();
@@ -43,7 +43,6 @@ async function analyzeBeat(file: File): Promise<string> {
   const energy = avgRms > 0.15 ? "high-energy, hard-hitting" : avgRms > 0.06 ? "moderate energy" : "soft, lo-fi";
   const texture = avgZcr > 0.15 ? "bright and gritty" : avgZcr > 0.08 ? "mixed tones" : "deep and smooth";
 
-  // Rough BPM estimate from onset intervals
   let bpmHint = "";
   if (onsets.length > 4) {
     const intervals = onsets.slice(1).map((t, i) => t - onsets[i]).filter(iv => iv > 0.2 && iv < 2);
@@ -54,7 +53,6 @@ async function analyzeBeat(file: File): Promise<string> {
     }
   }
 
-  // Try to extract BPM from filename
   const filenameBpm = file.name.match(/(\d{2,3})\s*bpm/i);
   if (filenameBpm) bpmHint = `BPM: ${filenameBpm[1]} (from filename). `;
 
@@ -67,7 +65,7 @@ async function analyzeBeat(file: File): Promise<string> {
   ].join("\n");
 }
 
-export default function BeatUpload({ onAnalyzed, onClear }: Props) {
+export default function BeatUpload({ onAnalyzed, onClear, accentColor = "#E8437A" }: Props) {
   const [file, setFile] = useState<File | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [error, setError] = useState("");
@@ -95,10 +93,15 @@ export default function BeatUpload({ onAnalyzed, onClear }: Props) {
 
   if (file && !analyzing) {
     return (
-      <div className="flex items-center gap-3 px-4 py-3 bg-gray-50 rounded-xl border border-gray-200">
-        <Music size={14} className="text-gray-400 shrink-0" />
-        <span className="text-sm text-gray-700 truncate flex-1 font-medium">{file.name}</span>
-        <button onClick={clear} className="text-gray-300 hover:text-gray-600 transition-colors shrink-0">
+      <div
+        className="flex items-center gap-3 px-4 py-3 rounded-xl"
+        style={{ background: `${accentColor}15`, border: `1px solid ${accentColor}44` }}
+      >
+        <Music size={14} style={{ color: accentColor }} className="shrink-0" />
+        <span className="text-sm truncate flex-1 font-medium" style={{ color: "rgba(255,255,255,0.8)" }}>{file.name}</span>
+        <button onClick={clear} className="shrink-0 transition-colors" style={{ color: "rgba(255,255,255,0.3)" }}
+          onMouseEnter={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.8)")}
+          onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.3)")}>
           <X size={14} />
         </button>
       </div>
@@ -117,7 +120,14 @@ export default function BeatUpload({ onAnalyzed, onClear }: Props) {
       <button
         onClick={() => inputRef.current?.click()}
         disabled={analyzing}
-        className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-dashed border-gray-300 text-sm text-gray-500 hover:border-gray-400 hover:text-gray-700 hover:bg-gray-50 transition-all w-full justify-center"
+        className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm w-full justify-center transition-all"
+        style={{
+          border: "1px dashed rgba(255,255,255,0.15)",
+          color: "rgba(255,255,255,0.4)",
+          background: "transparent",
+        }}
+        onMouseEnter={(e) => { e.currentTarget.style.borderColor = `${accentColor}66`; e.currentTarget.style.color = accentColor; e.currentTarget.style.background = `${accentColor}0d`; }}
+        onMouseLeave={(e) => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.15)"; e.currentTarget.style.color = "rgba(255,255,255,0.4)"; e.currentTarget.style.background = "transparent"; }}
       >
         {analyzing ? (
           <><Loader2 size={14} className="animate-spin" /> Analyzing beat...</>
@@ -125,7 +135,7 @@ export default function BeatUpload({ onAnalyzed, onClear }: Props) {
           <><Upload size={14} /> Upload beat file</>
         )}
       </button>
-      {error && <p className="text-xs text-red-500 mt-1.5">{error}</p>}
+      {error && <p className="text-xs text-red-400 mt-1.5">{error}</p>}
     </div>
   );
 }

@@ -21,8 +21,17 @@ export default function ExportButton({ song, filename = "lyrics" }: Props) {
   };
 
   return (
-    <button onClick={exportTxt}
-      className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white border border-gray-200 text-gray-700 text-sm font-medium hover:bg-gray-50 transition-all">
+    <button
+      onClick={exportTxt}
+      className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all"
+      style={{
+        background: "rgba(255,255,255,0.06)",
+        border: "1px solid rgba(255,255,255,0.1)",
+        color: "rgba(255,255,255,0.7)",
+      }}
+      onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.1)"; e.currentTarget.style.color = "#fff"; }}
+      onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.06)"; e.currentTarget.style.color = "rgba(255,255,255,0.7)"; }}
+    >
       <Download size={13} /> Export
     </button>
   );
