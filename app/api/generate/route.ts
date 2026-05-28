@@ -1,14 +1,24 @@
 import { anthropic, SYSTEM_PROMPT } from "@/lib/claude";
 import { buildUserPrompt, buildRefinementPrompt, buildPolishPrompt, buildMelodyPrompt, buildExpandPrompt, buildLyricsToBeatPrompt } from "@/lib/prompts";
 import { FREE_LIMIT } from "@/lib/stripe";
+import { rateLimit, getIp } from "@/lib/rate-limit";
 import { createClient } from "@supabase/supabase-js";
 import type { GenerationRequest } from "@/types";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
+const INPUT_MAX = 4000; // characters
+
 export async function POST(req: Request) {
-  // Free tier enforcement (skipped if service role key not configured)
+  // ── Rate limiting ──────────────────────────────────────────────────────────
+  const ip = getIp(req);
+  // 20 generations per minute per IP (generous but protects against runaway scripts)
+  if (!rateLimit(ip, 20, 60_000)) {
+    return Response.json({ error: "Too many requests — slow down and try again in a minute." }, { status: 429 });
+  }
+
+  // ── Auth + free-tier enforcement ───────────────────────────────────────────
   const authHeader = req.headers.get("Authorization");
   if (authHeader && process.env.SUPABASE_SERVICE_ROLE_KEY) {
     const token = authHeader.replace("Bearer ", "");
@@ -30,6 +40,17 @@ export async function POST(req: Request) {
   }
 
   const body: GenerationRequest & { refinement?: string } = await req.json();
+
+  // ── Input validation ───────────────────────────────────────────────────────
+  if (typeof body.input !== "string") {
+    return Response.json({ error: "Invalid request." }, { status: 400 });
+  }
+  if (body.input.length > INPUT_MAX) {
+    return Response.json({ error: `Input too long — max ${INPUT_MAX} characters.` }, { status: 400 });
+  }
+  if (body.refinement && body.refinement.length > 500) {
+    return Response.json({ error: "Refinement prompt too long." }, { status: 400 });
+  }
 
   const { conversationHistory = [], refinement, temperature = 0.7, voiceMode } = body;
 
